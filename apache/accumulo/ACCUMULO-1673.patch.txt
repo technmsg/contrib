@@ -1,0 +1,43 @@
+From d9ad8c81bfa801024b9e5f3b71f8934ed46414fb Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@cloudera.com>
+Date: Thu, 19 Sep 2013 11:46:20 -0400
+Subject: [PATCH] ACCUMULO-1673 fix 1.5 manual indexing example
+
+---
+ .../accumulo_user_manual/chapters/table_design.tex |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/docs/src/main/latex/accumulo_user_manual/chapters/table_design.tex b/docs/src/main/latex/accumulo_user_manual/chapters/table_design.tex
+index a5cc771..1f6deb5 100644
+--- a/docs/src/main/latex/accumulo_user_manual/chapters/table_design.tex
++++ b/docs/src/main/latex/accumulo_user_manual/chapters/table_design.tex
+@@ -151,22 +151,22 @@ sorted order, as is the case with the basic Scanner interface.
+ 
+ Text term = new Text("mySearchTerm");
+ 
+-HashSet<Text> matchingRows = new HashSet<Text>();
++HashSet<Range> matchingRows = new HashSet<Range>();
+ 
+ Scanner indexScanner = createScanner("index", auths);
+ indexScanner.setRange(new Range(term, term));
+ 
+ // we retrieve the matching rowIDs and create a set of ranges
+ for(Entry<Key,Value> entry : indexScanner)
+-    matchingRows.add(new Text(entry.getKey().getColumnQualifier()));
++    matchingRows.add(new Range(entry.getKey().getColumnQualifier()));
+ 
+ // now we pass the set of rowIDs to the batch scanner to retrieve them
+ BatchScanner bscan = conn.createBatchScanner("table", auths, 10);
+ 
+ bscan.setRanges(matchingRows);
+-bscan.fetchFamily("attributes");
++bscan.fetchColumnFamily("attributes");
+ 
+-for(Entry<Key,Value> entry : scan)
++for(Entry<Key,Value> entry : bscan)
+     System.out.println(entry.getValue());
+ \end{verbatim}
+ \normalsize
+-- 
+1.7.2.2
+

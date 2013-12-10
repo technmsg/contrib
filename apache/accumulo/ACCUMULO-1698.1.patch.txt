@@ -1,0 +1,25 @@
+From 6b1d6dfff0fe522d918d9e5b5d0bfb7e65fc7cef Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@cloudera.com>
+Date: Fri, 6 Sep 2013 15:17:30 -0400
+Subject: [PATCH] Try system hostname as well as possibly-nonexistant alias.
+
+---
+ bin/stop-here.sh |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/bin/stop-here.sh b/bin/stop-here.sh
+index 8a3b513..d539b68 100755
+--- a/bin/stop-here.sh
++++ b/bin/stop-here.sh
+@@ -36,7 +36,7 @@ ACCUMULO="$ACCUMULO_HOME/lib/accumulo-start.jar"
+ if egrep -q localhost\|127.0.0.1 $ACCUMULO_CONF_DIR/slaves; then
+    $bin/accumulo admin stop localhost
+ else
+-   for host in `hostname -a`; do
++   for host in "`hostname -a` `hostname`"; do
+       if grep -q ${host} $ACCUMULO_CONF_DIR/slaves; then
+          ${bin}/accumulo admin stop $host
+       fi
+-- 
+1.7.2.2
+
