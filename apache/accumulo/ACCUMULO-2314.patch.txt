@@ -1,0 +1,57 @@
+From aa147c4d53b62a4726214e5eed714740d9ea71d6 Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@clouderagovt.com>
+Date: Mon, 3 Feb 2014 14:58:14 -0500
+Subject: [PATCH] ACCUMULO-2314 Fix nit typographical/grammar issues.
+
+---
+ bin/config.sh                                                       | 2 +-
+ .../src/main/java/org/apache/accumulo/server/logger/LogWriter.java  | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/bin/config.sh b/bin/config.sh
+index 665777e..12f2096 100755
+--- a/bin/config.sh
++++ b/bin/config.sh
+@@ -28,7 +28,7 @@
+ #  HADOOP_HOME        Home dir for hadoop.
+ #  MONITOR            Machine to run monitor daemon on. Used by start-here.sh script
+ #
+-# Iff ACCUMULO_VERIFY_ONLY is not set, this script will
++# If and only if ACCUMULO_VERIFY_ONLY is not set, this script will
+ #   * Check for standalone mode (lack of masters and slaves files)
+ #     - Do appropriate set up
+ #   * Ensure the existence of ACCUMULO_LOG_DIR on the current host
+diff --git a/src/server/src/main/java/org/apache/accumulo/server/logger/LogWriter.java b/src/server/src/main/java/org/apache/accumulo/server/logger/LogWriter.java
+index a8bc87c..53104ef 100644
+--- a/src/server/src/main/java/org/apache/accumulo/server/logger/LogWriter.java
++++ b/src/server/src/main/java/org/apache/accumulo/server/logger/LogWriter.java
+@@ -287,7 +287,7 @@ class LogWriter implements MutationLogger.Iface {
+ 
+         FileSystem local = TraceFileSystem.wrap(FileSystem.getLocal(fs.getConf()).getRaw());
+         Path dest = new Path(fullyQualifiedFileName + ".recovered");
+-        log.debug("Sorting log file to DSF " + dest);
++        log.debug("Sorting log file to DFS " + dest);
+         fs.mkdirs(dest);
+         int part = 0;
+ 
+@@ -325,7 +325,7 @@ class LogWriter implements MutationLogger.Iface {
+ 
+       private void writeSortedEntries(Path dest, int part, final List<Pair<LogFileKey,LogFileValue>> kv) throws IOException {
+         String path = dest + String.format("/part-r-%05d", part);
+-        log.debug("Writing partial log file to DSF " + path);
++        log.debug("Writing partial log file to DFS " + path);
+         log.debug("Sorting");
+         Span span = Trace.start("Logger sort");
+         span.data("logfile", dest.getName());
+@@ -353,7 +353,7 @@ class LogWriter implements MutationLogger.Iface {
+ 
+       private void copyLog(final String localLog, final String fullyQualifiedFileName) throws IOException {
+         Path dest = new Path(fullyQualifiedFileName + ".copy");
+-        log.debug("Copying log file to DSF " + dest);
++        log.debug("Copying log file to DFS " + dest);
+         fs.delete(dest, true);
+         LogFileKey key = new LogFileKey();
+         LogFileValue value = new LogFileValue();
+-- 
+1.8.3.4 (Apple Git-47)
+
