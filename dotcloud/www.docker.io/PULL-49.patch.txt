@@ -1,0 +1,32 @@
+From 9f9ac8a20aadd7a1b47ffc11f6fe262c6f66f40e Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@clouderagovt.com>
+Date: Mon, 3 Feb 2014 14:46:15 -0500
+Subject: [PATCH] Updated learn-more.md, fixed typo.
+
+---
+ _pages/learn-more.md | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/_pages/learn-more.md b/_pages/learn-more.md
+index 4e101f8..d825614 100755
+--- a/_pages/learn-more.md
++++ b/_pages/learn-more.md
+@@ -25,7 +25,7 @@ Common use cases for Docker include:
+ *   Automated testing and continuous integration/deployment
+ *   Deploying and scaling web apps, databases and backend services
+ 
+-\* Please note Docker is currently under heavy developement. It should not be used in production (yet).
++\* Please note Docker is currently under heavy development. It should not be used in production (yet).
+ 
+ ## Learn what Docker is all about
+ 
+@@ -40,4 +40,4 @@ Or, if you want to give it a spin:
+ 
+ <a href="{% url 'getting_started' %}" class="btn btn-large btn-primary primary-action-button center" title="getting started">Get started!</a>
+ 
+-{% endblock %}
+\ No newline at end of file
++{% endblock %}
+-- 
+1.8.5.1
+
