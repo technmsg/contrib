@@ -1,0 +1,903 @@
+From 38fa58c5c34b788ad9fb4ac1528884984dd841ed Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@clouderagovt.com>
+Date: Fri, 21 Mar 2014 11:19:41 -0400
+Subject: [PATCH] ACCUMULO-2239 reformat test README files to Markdown
+
+ACCUMULO-2239 minor fixes per bhavanki
+---
+ test/system/auto/README           | 104 -----------------------------------
+ test/system/auto/README.md        | 110 ++++++++++++++++++++++++++++++++++++++
+ test/system/bench/README          |  44 ---------------
+ test/system/bench/README.md       |  45 ++++++++++++++++
+ test/system/continuous/README     |  71 ------------------------
+ test/system/continuous/README.md  |  72 +++++++++++++++++++++++++
+ test/system/randomwalk/README     |  62 ---------------------
+ test/system/randomwalk/README.md  |  69 ++++++++++++++++++++++++
+ test/system/scalability/README    |  38 -------------
+ test/system/scalability/README.md |  40 ++++++++++++++
+ test/system/test1/README          |  26 ---------
+ test/system/test1/README.md       |  29 ++++++++++
+ test/system/test2/README          |   6 ---
+ test/system/test2/README.md       |   9 ++++
+ test/system/test3/README          |   2 -
+ test/system/test3/README.md       |   5 ++
+ test/system/test4/README          |   6 ---
+ test/system/test4/README.md       |   9 ++++
+ 18 files changed, 388 insertions(+), 359 deletions(-)
+ delete mode 100644 test/system/auto/README
+ create mode 100644 test/system/auto/README.md
+ delete mode 100644 test/system/bench/README
+ create mode 100644 test/system/bench/README.md
+ delete mode 100644 test/system/continuous/README
+ create mode 100644 test/system/continuous/README.md
+ delete mode 100644 test/system/randomwalk/README
+ create mode 100644 test/system/randomwalk/README.md
+ delete mode 100644 test/system/scalability/README
+ create mode 100644 test/system/scalability/README.md
+ delete mode 100644 test/system/test1/README
+ create mode 100644 test/system/test1/README.md
+ delete mode 100644 test/system/test2/README
+ create mode 100644 test/system/test2/README.md
+ delete mode 100644 test/system/test3/README
+ create mode 100644 test/system/test3/README.md
+ delete mode 100644 test/system/test4/README
+ create mode 100644 test/system/test4/README.md
+
+diff --git a/test/system/auto/README b/test/system/auto/README
+deleted file mode 100644
+index 7722c63..0000000
+--- a/test/system/auto/README
++++ /dev/null
+@@ -1,104 +0,0 @@
+-Apache Accumulo Functional Tests
+-
+-These scripts run a series of tests against a small local accumulo instance.
+-To run these scripts, you must have Hadoop and Zookeeper installed and running.
+-You will need a functioning C compiler to build a shared library needed for
+-one of the tests.  The test suite is known to run on Linux RedHat Enterprise
+-version 5, and Mac OS X 10.5.
+-
+-How to Run
+-
+-The tests are shown as being run from the ACCUMULO_HOME directory, but they
+-should run from any directory. Make sure to create "logs" and "walogs"
+-directories in ACCUMULO_HOME.  Also, ensure that accumulo-env.sh specifies its
+-ACCUMULO_LOG_DIR in the following way:
+-
+-test -z "$ACCUMULO_LOG_DIR"      && export ACCUMULO_LOG_DIR=$ACCUMULO_HOME/logs
+-
+- $ ./test/system/auto/run.py -l
+-
+-will list all the test names.  You can run the suite like this:
+-
+- $ ./test/system/auto/run.py
+-
+-You can select tests using a case-insensitive regular expression:
+-
+- $ ./test/system/auto/run.py -t simple
+- $ ./test/system/auto/run.py -t SunnyDay
+-
+-To run tests repeatedly:
+-
+- $ ./test/system/auto/run.py -r 3
+-
+-If you are attempting to debug what is causing a test to fail, you can run the
+-tests in "verbose" mode:
+-
+- $ python test/system/auto/run.py -t SunnyDay -v 10
+-
+-If a test is failing, and you would like to examine logs from the run, you can
+-run the test in "dirty" mode which will keep the test from cleaning up all the
+-logs at the end of the run:
+-
+- $ ./test/system/auto/run.py -t some.failing.test -d
+-
+-If the test suite hangs, and you would like to re-run the tests starting with
+-the last test that failed:
+-
+- $ ./test/system/auto/run.py -s start.over.test
+-
+-If tests tend to time out (on slower hardware, for example), you can scale up
+-the timeout values by a multiplier. This example triples timeouts:
+-
+- $ ./test/system/auto/run.py -f 3
+-
+-Test results are normally printed to the console, but you can send them to XML
+-files compatible with Jenkins:
+-
+- $ ./test/system/auto/run.py -x
+-
+-Running under MapReduce
+-
+-The full test suite can take nearly an hour.  If you have a larger Hadoop
+-cluster at your disposal, you can run the tests as a MapReduce job:
+-
+- $ python test/system/auto/run.py -l > tests
+- $ hadoop fs -put tests /user/hadoop/tests
+- $ ./bin/accumulo org.apache.accumulo.server.test.functional.RunTests \
+-   /user/hadoop/tests /user/hadoop/results
+-
+-The example above runs every test. You can trim the tests file to include
+-only the tests you wish to run.
+-
+-You may specify a 'timeout factor' via an optional integer as a third argument:
+-
+- $ ./bin/accumulo org.apache.accumulo.server.test.functional.RunTests \
+-   /user/hadoop/tests /user/hadoop/results timeout_factor
+-
+-Where 'timeout_factor' indicates how much we should scale up timeouts. It will
+-be used to set both mapred.task.timeout and the "-f" flag used by run.py. If
+-not given, 'timeout_factor' defaults to 1, which corresponds to a
+-mapred.task.timeout of 480 seconds.
+-
+-In some clusters, the user under which MR jobs run is different from the user
+-under which Accumulo is installed, and this can cause failures running the
+-tests. Various configuration and permission changes can be made to help the
+-tests run, including the following:
+-
+-* Opening up directory and file permissions on each cluster node so that the MR
+-  user has the same read/write privileges as the Accumulo user. Adding the MR
+-  user to a shared group is one easy way to accomplish this. Access is required
+-  to the Accumulo installation, log, write-ahead log, and configuration
+-  directories.
+-* Creating a user directory in HDFS, named after and owned by the MR user,
+-  e.g., /user/mruser.
+-* Setting the ZOOKEEPER_HOME and HADOOP_CONF_DIR environment variables for the
+-  MR user. These can be set using the mapred.child.env property in
+-  mapred-site.xml, e.g.:
+-
+-  <property>
+-    <name>mapred.child.env</name>
+-    <value>ZOOKEEPER_HOME=/path/to/zookeeper,HADOOP_CONF_DIR=/path/to/hadoop/conf</value>
+-  </property>
+-
+-Each functional test is run by a mapper, and so you can check the mapper logs
+-to see any error messages tests produce.
+diff --git a/test/system/auto/README.md b/test/system/auto/README.md
+new file mode 100644
+index 0000000..0fb9531
+--- /dev/null
++++ b/test/system/auto/README.md
+@@ -0,0 +1,110 @@
++Apache Accumulo Functional Tests
++================================
++
++These scripts run a series of tests against a small local accumulo instance.
++To run these scripts, you must have Hadoop and Zookeeper installed and running.
++You will need a functioning C compiler to build a shared library needed for
++one of the tests.  The test suite is known to run on Linux RedHat Enterprise
++version 5, and Mac OS X 10.5.
++
++How to Run
++----------
++
++The tests are shown as being run from the `ACCUMULO_HOME` directory, but they
++should run from any directory. Make sure to create "logs" and "walogs"
++directories in `ACCUMULO_HOME`.  Also, ensure that `accumulo-env.sh` specifies its
++`ACCUMULO_LOG_DIR` in the following way:
++
++> `$ test -z "$ACCUMULO_LOG_DIR" && export ACCUMULO_LOG_DIR=$ACCUMULO_HOME/logs`
++
++To list all the test names:
++
++> `$ ./test/system/auto/run.py -l`
++
++You can run the suite like this:
++
++> `$ ./test/system/auto/run.py`
++
++You can select tests using a case-insensitive regular expression:
++
++> `$ ./test/system/auto/run.py -t simple`  
++> `$ ./test/system/auto/run.py -t SunnyDay`
++
++To run tests repeatedly:
++
++> `$ ./test/system/auto/run.py -r 3`
++
++If you are attempting to debug what is causing a test to fail, you can run the
++tests in "verbose" mode:
++
++> `$ python test/system/auto/run.py -t SunnyDay -v 10`
++
++If a test is failing, and you would like to examine logs from the run, you can
++run the test in "dirty" mode which will keep the test from cleaning up all the
++logs at the end of the run:
++
++> `$ ./test/system/auto/run.py -t some.failing.test -d`
++
++If the test suite hangs, and you would like to re-run the tests starting with
++the last test that failed:
++
++> `$ ./test/system/auto/run.py -s start.over.test`
++
++If tests tend to time out (on slower hardware, for example), you can scale up
++the timeout values by a multiplier. This example triples timeouts:
++
++> `$ ./test/system/auto/run.py -f 3`
++
++Test results are normally printed to the console, but you can send them to XML
++files compatible with Jenkins:
++
++> `$ ./test/system/auto/run.py -x`
++
++Running under MapReduce
++-----------------------
++
++The full test suite can take nearly an hour.  If you have a larger Hadoop
++cluster at your disposal, you can run the tests as a MapReduce job:
++
++> `$ python test/system/auto/run.py -l > tests  
++$ hadoop fs -put tests /user/hadoop/tests  
++$ ./bin/accumulo org.apache.accumulo.server.test.functional.RunTests \  
++    /user/hadoop/tests /user/hadoop/results`
++
++The example above runs every test. You can trim the tests file to include
++only the tests you wish to run.
++
++You may specify a 'timeout factor' via an optional integer as a third argument:
++
++> `$ ./bin/accumulo org.apache.accumulo.server.test.functional.RunTests \  
++/user/hadoop/tests /user/hadoop/results timeout_factor`
++
++Where `timeout_factor` indicates how much we should scale up timeouts. It will
++be used to set both `mapred.task.timeout` and the "-f" flag used by `run.py`. If
++not given, `timeout_factor` defaults to 1, which corresponds to a
++`mapred.task.timeout` of 480 seconds.
++
++In some clusters, the user under which MR jobs run is different from the user
++under which Accumulo is installed, and this can cause failures running the
++tests. Various configuration and permission changes can be made to help the
++tests run, including the following:
++
++* Opening up directory and file permissions on each cluster node so that the MR
++  user has the same read/write privileges as the Accumulo user. Adding the MR
++  user to a shared group is one easy way to accomplish this. Access is required
++  to the Accumulo installation, log, write-ahead log, and configuration
++  directories.
++* Creating a user directory in HDFS, named after and owned by the MR user,
++  e.g., `/user/mruser`.
++* Setting the `ZOOKEEPER_HOME` and `HADOOP_CONF_DIR` environment variables for the
++  MR user. These can be set using the `mapred.child.env` property in
++  `mapred-site.xml`, e.g.:
++
++  `<property>  
++    <name>mapred.child.env</name>  
++    <value>ZOOKEEPER_HOME=/path/to/zookeeper,HADOOP_CONF_DIR=/path/to/hadoop/conf</value>  
++  </property>`
++
++Each functional test is run by a mapper, and so you can check the mapper logs
++to see any error messages tests produce.
++
+diff --git a/test/system/bench/README b/test/system/bench/README
+deleted file mode 100644
+index 06e174b..0000000
+--- a/test/system/bench/README
++++ /dev/null
+@@ -1,44 +0,0 @@
+-**********************************************
+-
+-1. Running the Benchmarks
+-
+-Syntax for running run.py:
+-./run.py [-l -v <log_level> -s <run_speed> -u <user> -p <password> -i <instance>] [Benchmark1 ... BenchmarkN]
+-
+-Specifying a specific benchmark or set of benchmarks runs only those, while 
+-not specifying any runs all benchmarks.
+--l Lists the benchmarks that will be run
+--v <run_speed> can either be slow, medium or fast
+--s <log_level> is a number representing the verbosity of the debugging output: 10 is debug, 20 is info, 30 is warning, etc.
+--u <user> user to use when connecting with accumulo.  If not set you will be prompted to input it.
+--p <password> password to use when connecting with accumulo.  If not set you will be prompted to input it.
+--z <zookeepers> comma delimited lit of zookeeper host:port pairs to use when connecting with accumulo.  If not set you will be prompted to input it.
+--i <instance> instance to use when connecting with accumulo.  If not set you will be prompted to input it.
+-
+-**********************************************
+-
+-2. The Benchmarks
+-
+-Values in a 3-tuple are the slow,medium,fast speeds at which you can run the benchmarks. 
+-
+-CloudStone1: Test the speed at which we can check that accumulo is up and we
+-             can reach all the slaves. Lower is better.
+-CloudStone2: Ingest 10000,100000,1000000 rows of values 50 bytes on every slave.  Higher is better.
+-CloudStone3: Ingest 1000,5000,10000 rows of values 1024,8192,65535 bytes on every slave.  Higher is better.
+-CloudStone4 (TeraSort): Ingests 10000,10000000,10000000000 rows. Lower score is better.
+-CloudStone5: Creates 100,500,1000 tables named TestTableX and then deletes them. Lower is better.
+-CloudStone6: Creates a table with 400, 800, 1000 splits.  Lower is better
+-
+-**********************************************
+-
+-3. Terasort
+-
+-The 4th Benchmark is Terasort.  Run the benchmarks with speed 'slow' to do a full terasort.
+-
+-**********************************************
+-
+-4. Misc
+-
+-These benchmarks create tables in accumulo named 'test_ingest' and 'CloudIngestTest'.  These tables are deleted
+-at the end of the benchmarks. The benchmarks will also alter user auths while it runs. It is recommended that
+-a benchmark user is created.
+diff --git a/test/system/bench/README.md b/test/system/bench/README.md
+new file mode 100644
+index 0000000..8bdf4d1
+--- /dev/null
++++ b/test/system/bench/README.md
+@@ -0,0 +1,45 @@
++Benchmark Tests
++===============
++
++Running the Benchmarks
++----------------------
++
++Syntax for running run.py:
++
++> `$ ./run.py [-l -v <log_level> -s <run_speed> -u <user> -p <password> -i <instance>] [Benchmark1 ... BenchmarkN]`
++
++Specifying a specific benchmark or set of benchmarks runs only those, while
++not specifying any runs all benchmarks.
++
++`-l` lists the benchmarks that will be run  
++`-v <run_speed>` can either be slow, medium or fast  
++`-s <log_level>` is a number representing the verbosity of the debugging output: 10 is debug, 20 is info, 30 is warning, etc.  
++`-u <user>` user to use when connecting with accumulo.  If not set you will be prompted to input it.  
++`-p <password>` password to use when connecting with accumulo.  If not set you will be prompted to input it.  
++`-z <zookeepers>` comma delimited lit of zookeeper host:port pairs to use when connecting with accumulo.  If not set you will be prompted to input it.  
++`-i <instance>` instance to use when connecting with accumulo.  If not set you will be prompted to input it.  
++
++The Benchmarks
++--------------
++
++Values in a 3-tuple are the slow,medium,fast speeds at which you can run the benchmarks.
++
++* CloudStone1: Test the speed at which we can check that accumulo is up and we can reach all the slaves. Lower is better.  
++* CloudStone2: Ingest 10000,100000,1000000 rows of values 50 bytes on every slave.  Higher is better.  
++* CloudStone3: Ingest 1000,5000,10000 rows of values 1024,8192,65535 bytes on every slave.  Higher is better.  
++* CloudStone4 (TeraSort): Ingests 10000,10000000,10000000000 rows. Lower score is better.  
++* CloudStone5: Creates 100,500,1000 tables named TestTableX and then deletes them. Lower is better.  
++* CloudStone6: Creates a table with 400, 800, 1000 splits.  Lower is better.  
++
++Terasort
++--------
++
++The 4th Benchmark is Terasort.  Run the benchmarks with speed 'slow' to do a full terasort.
++
++Misc
++----
++
++These benchmarks create tables in accumulo named 'test_ingest' and 'CloudIngestTest'.  These tables are deleted
++at the end of the benchmarks. The benchmarks will also alter user auths while it runs. It is recommended that
++a benchmark user is created.
++
+diff --git a/test/system/continuous/README b/test/system/continuous/README
+deleted file mode 100644
+index 2ee5bf0..0000000
+--- a/test/system/continuous/README
++++ /dev/null
+@@ -1,71 +0,0 @@
+-This directory contains a suite of scripts for placing continuous query and
+-ingest load on accumulo.  The purpose of these script is two fold. First,
+-place continuous load on accumulo to see if breaks.  Second, collect
+-statistics in order to understand how accumulo behaves .  To run these script
+-copy all of the .example files and modify them.   You can put these scripts in 
+-the current directory or define a CONTINUOUS_CONF_DIR where the files will be
+-read from. These scripts rely on pssh. Before running any script you may need
+-to use pssh to create the log directory on each machine if you want it local.
+-Also, create the table "ci" before running.
+-
+-The following ingest scripts inserts data into accumulo that will form a random
+-graph.
+-
+-  start-ingest.sh
+-  stop-ingest.sh
+-
+-
+-The following query scripts randomly walk the graph created by the ingesters.
+-Each walker produce detailed statistics on query/scan times.
+-
+-  start-walkers.sh
+-  stop-walker.sh
+-
+-The following scripts start and stop batch walkers.
+-
+-  start-batchwalkers.sh  
+-  stop-batchwalkers.sh
+-
+-In addition to placing continuous load, the following scripts start and stop a
+-service that continually collect statistics about accumulo and HDFS. 
+-
+- start-stats.sh
+- stop-stats.sh 
+-
+-Optionally, start the agitator to periodically kill random servers.  
+-
+- start-agitator.sh
+- stop-agitator.sh
+-
+-Start all three of these services and let them run for a few hours. Then run
+-report.pl to generate an simple html report containing plots and histograms
+-showing what has transpired. 
+-
+-A map reduce job to verify all data created by continuous ingest can be run
+-with the following command.  Before running the command modify the VERIFY_*
+-variables in continuous-env.sh if needed.  Do not run ingest while running this
+-command, this will cause erroneous reporting of UNDEFINED nodes. The map reduce
+-job will scan a reference after it has scanned the definition.
+-
+- run-verify.sh
+-
+-Each entry, except for the first batch of entries, inserted by continuous
+-ingest references a previously flushed entry.  Since we are referencing flushed
+-entries, they should always exist.  The map reduce job checks that all
+-referenced entries exist.  If it finds any that do not exist it will increment
+-the UNDEFINED counter and emit the referenced but undefined node.  The map
+-reduce job produces two other counts : REFERENCED and UNREFERENCED.  It is
+-expected that these two counts are non zero.  REFERENCED counts nodes that are
+-defined and referenced.  UNREFERENCED counts nodes that defined and
+-unreferenced, these are the latest nodes inserted.
+-
+-To stress accumulo, run the following script which starts a map reduce job
+-that reads and writes to your continuous ingest table.  This map reduce job
+-will write out an entry for every entry in the table (except for ones created
+-by the map reduce job itself). Stop ingest before running this map reduce job.
+-Do not run more than one instance of this map reduce job concurrently against a
+-table.
+-
+- run-moru.sh
+-
+-
+diff --git a/test/system/continuous/README.md b/test/system/continuous/README.md
+new file mode 100644
+index 0000000..6cf5d81
+--- /dev/null
++++ b/test/system/continuous/README.md
+@@ -0,0 +1,72 @@
++Continuous Query and Ingest
++===========================
++
++This directory contains a suite of scripts for placing continuous query and
++ingest load on accumulo.  The purpose of these script is two-fold. First,
++place continuous load on accumulo to see if breaks.  Second, collect
++statistics in order to understand how accumulo behaves.  To run these scripts
++copy all of the `.example` files and modify them.  You can put these scripts in
++the current directory or define a `CONTINUOUS_CONF_DIR` where the files will be
++read from. These scripts rely on `pssh`. Before running any script you may need
++to use `pssh` to create the log directory on each machine (if you want it local).
++Also, create the table "ci" before running.
++
++The following ingest scripts insert data into accumulo that will form a random
++graph.
++
++> `$ start-ingest.sh  
++$ stop-ingest.sh`
++
++The following query scripts randomly walk the graph created by the ingesters.
++Each walker produce detailed statistics on query/scan times.
++
++> `$ start-walkers.sh  
++$ stop-walker.sh`
++
++The following scripts start and stop batch walkers.
++
++> `$ start-batchwalkers.sh  
++$ stop-batchwalkers.sh`
++
++In addition to placing continuous load, the following scripts start and stop a
++service that continually collect statistics about accumulo and HDFS.
++
++> `$ start-stats.sh  
++$ stop-stats.sh`
++
++Optionally, start the agitator to periodically kill random servers.
++
++> `$ start-agitator.sh  
++$ stop-agitator.sh`
++
++Start all three of these services and let them run for a few hours. Then run
++`report.pl` to generate a simple HTML report containing plots and histograms
++showing what has transpired.
++
++A MapReduce job to verify all data created by continuous ingest can be run
++with the following command.  Before running the command modify the `VERIFY_*`
++variables in `continuous-env.sh` if needed.  Do not run ingest while running this
++command, this will cause erroneous reporting of UNDEFINED nodes. The MapReduce
++job will scan a reference after it has scanned the definition.
++
++> `$ run-verify.sh`
++
++Each entry, except for the first batch of entries, inserted by continuous
++ingest references a previously flushed entry.  Since we are referencing flushed
++entries, they should always exist.  The MapReduce job checks that all
++referenced entries exist.  If it finds any that do not exist it will increment
++the UNDEFINED counter and emit the referenced but undefined node.  The MapReduce
++job produces two other counts : REFERENCED and UNREFERENCED.  It is
++expected that these two counts are non zero.  REFERENCED counts nodes that are
++defined and referenced.  UNREFERENCED counts nodes that defined and
++unreferenced, these are the latest nodes inserted.
++
++To stress accumulo, run the following script which starts a MapReduce job
++that reads and writes to your continuous ingest table.  This MapReduce job
++will write out an entry for every entry in the table (except for ones created
++by the MapReduce job itself). Stop ingest before running this MapReduce job.
++Do not run more than one instance of this MapReduce job concurrently against a
++table.
++
++> `$ run-moru.sh`
++
+diff --git a/test/system/randomwalk/README b/test/system/randomwalk/README
+deleted file mode 100644
+index c50f790..0000000
+--- a/test/system/randomwalk/README
++++ /dev/null
+@@ -1,62 +0,0 @@
+-Apache Accumulo Random Walk Tests
+-
+-The randomwalk framework needs to be configured for your Accumulo instance by
+-doing the following steps:
+-
+-1.  Make sure you have both ACCUMULO_HOME and HADOOP_HOME set in your 
+-    $ACCUMULO_CONF_DIR/accumulo-env.sh.
+-
+-2.  Create 'randomwalk.conf' file in the conf directory containing settings
+-    needed by walkers to connect to Accumulo.
+-
+-3.  Create a 'walkers' file in the conf directory containing the hostnames of
+-    the machines where you want random walkers to run.
+-
+-3.  Create a 'logger.xml' file in the conf directory from logger.xml.example
+-
+-The command below starts random walkers on all machines listed in 'walkers'.
+-The argument Image.xml indicates the module to use (which is located at 
+-conf/modules/Image.xml):
+-
+-./bin/start-all.sh Image.xml
+-
+-All modules must be in conf/modules and can be referenced without this prefix.  
+-For example, a module located at conf/modules/foo/bar.xml is started as
+-the following:
+-
+-./bin/start-all.sh foo/bar.xml
+-
+-This command will load all configuration in the conf directory to HDFS and
+-start identical random walkers on each node.  These random walkers will
+-download the current configuration from HDFS and place them in the tmp/
+-directory.
+-
+-Random walkers will drop their logs in the logs/ directory.  If you are running
+-multiple walkers and want error/warns dropped to a NFS hosted logs, please set
+-NFS_LOGPATH to a NFS-mounted directory and uncomment the NFS appender in logger.xml
+-
+-You can kill all walkers on the machines listed in the 'walkers' file using
+-the following command:
+-
+-./bin/kill-all.sh
+-
+------------------------------------------------------------------------------
+-
+-Other useful commands:
+-
+-copy-config.sh		    Copies configuration in conf/ to HDFS
+-
+-start-local.sh All.xml	    Copies configuration from HDFS into tmp/ and
+-			    and starts only one local random walker.
+- 
+-pkill -f randomwalk.Framework	Stops all local random walkers
+-
+------------------------------------------------------------------------------
+-
+-If you are running randomwalk tests while exercising Hadoop's high availability
+-(HA) failover capabilities, you should use Hadoop version 2.1.0 or later.
+-Failover scenarios are more likely to cause randomwalk test failures under
+-earlier Hadoop versions. See the following issue reports for more details.
+-
+-* https://issues.apache.org/jira/browse/HDFS-4404
+-* https://issues.apache.org/jira/browse/HADOOP-9792
+diff --git a/test/system/randomwalk/README.md b/test/system/randomwalk/README.md
+new file mode 100644
+index 0000000..77f766f
+--- /dev/null
++++ b/test/system/randomwalk/README.md
+@@ -0,0 +1,69 @@
++Apache Accumulo Random Walk Tests
++=================================
++
++The randomwalk framework needs to be configured for your Accumulo instance by
++doing the following steps:
++
++1.  Make sure you have both `ACCUMULO_HOME` and `HADOOP_HOME` set in your
++    `$ACCUMULO_CONF_DIR/accumulo-env.sh`.
++
++2.  Create 'randomwalk.conf' file in the `conf` directory containing settings
++    needed by walkers to connect to Accumulo.
++
++3.  Create a 'walkers' file in the `conf` directory containing the hostnames of
++    the machines where you want random walkers to run.
++
++3.  Create a 'logger.xml' file in the `conf` directory from `logger.xml.example`.
++
++The command below starts random walkers on all machines listed in 'walkers'.
++The argument `Image.xml` indicates the module to use (which is located at
++`conf/modules/Image.xml`):
++
++> `$ ./bin/start-all.sh Image.xml`
++
++All modules must be in `conf/modules` and can be referenced without this prefix.
++For example, a module located at `conf/modules/foo/bar.xml` is started as
++the following:
++
++> `$ ./bin/start-all.sh foo/bar.xml`
++
++This command will load all configuration in the `conf` directory to HDFS and
++start identical random walkers on each node.  These random walkers will
++download the current configuration from HDFS and place them in the `tmp/`
++directory.
++
++Random walkers will drop their logs in the `logs/` directory.  If you are running
++multiple walkers and want ERROR/WARNs dropped to an NFS-hosted log, please set
++`NFS_LOGPATH` to a NFS-mounted directory and uncomment the NFS appender in `logger.xml`.
++
++You can kill all walkers on the machines listed in the 'walkers' file using
++the following command:
++
++> `$ ./bin/kill-all.sh`
++
++Other Useful Commands
++---------------------
++
++Copies configuration in `conf/` to HDFS:
++
++> `$ copy-config.sh`
++
++Copies configuration from HDFS into `tmp/` and starts only one local random walker.
++
++> `$ start-local.sh All.xml`
++
++Stops all local random walkers:
++
++> `$ pkill -f randomwalk.Framework`
++
++Known Issues
++------------
++
++If you are running randomwalk tests while exercising Hadoop's high availability
++(HA) failover capabilities, you should use Hadoop version 2.1.0 or later.
++Failover scenarios are more likely to cause randomwalk test failures under
++earlier Hadoop versions. See the following issue reports for more details.
++
++* [HDFS-4404](https://issues.apache.org/jira/browse/HDFS-4404)
++* [HADOOP-9792](https://issues.apache.org/jira/browse/HADOOP-9792)
++
+diff --git a/test/system/scalability/README b/test/system/scalability/README
+deleted file mode 100644
+index cd7440c..0000000
+--- a/test/system/scalability/README
++++ /dev/null
+@@ -1,38 +0,0 @@
+-Apache Accumulo Scalability Tests
+-
+-The scalability test framework needs to be configured for your Accumulo
+-instance by performing the following steps.
+-
+-WARNING: Each scalability test rewrites your conf/slaves file and reinitializes
+-your Accumulo instance. Do not run these tests on a cluster holding essential
+-data.
+-
+-1.  Make sure you have both ACCUMULO_HOME and HADOOP_HOME set in your
+-    $ACCUMULO_CONF_DIR/accumulo-env.sh.
+-
+-2.  Create a 'site.conf' file in the conf directory containing settings
+-    needed by test nodes to connect to Accumulo, and to guide the tests.
+-
+-    cp conf/site.conf.example conf/site.conf
+-
+-3.  Create an 'Ingest.conf' file in the conf directory containing performance
+-    settings for the Ingest test. (This test is currently the only scalability
+-    test available.)
+-
+-    cp conf/Ingest.conf.example conf/Ingest.conf
+-
+-    Each test has a unique ID (e.g., "Ingest") which correlates with its test
+-    code in:
+-
+-    org.apache.accumulo.server.test.scalability.tests.<ID>
+-
+-    This ID correlates with a config file:
+-
+-    conf/<ID>.conf
+-
+-To run the test, specify its ID to the run.py script.
+-
+-    nohup ./run.py Ingest > test1.log 2>&1 &
+-
+-A timestamped directory will be created, and results are placed in it as each
+-test completes.
+diff --git a/test/system/scalability/README.md b/test/system/scalability/README.md
+new file mode 100644
+index 0000000..d0a5772
+--- /dev/null
++++ b/test/system/scalability/README.md
+@@ -0,0 +1,40 @@
++Apache Accumulo Scalability Tests
++=================================
++
++The scalability test framework needs to be configured for your Accumulo
++instance by performing the following steps.
++
++WARNING: Each scalability test rewrites your `conf/slaves` file and reinitializes
++your Accumulo instance. Do not run these tests on a cluster holding essential
++data.
++
++1.  Make sure you have both `ACCUMULO_HOME` and `HADOOP_HOME` set in your
++    `$ACCUMULO_CONF_DIR/accumulo-env.sh.`
++
++2.  Create a 'site.conf' file in the `conf` directory containing settings
++    needed by test nodes to connect to Accumulo, and to guide the tests.
++
++    `$ cp conf/site.conf.example conf/site.conf`
++
++3.  Create an 'Ingest.conf' file in the `conf` directory containing performance
++    settings for the Ingest test. (This test is currently the only scalability
++    test available.)
++
++    `$ cp conf/Ingest.conf.example conf/Ingest.conf`
++
++    Each test has a unique ID (e.g., "Ingest") which correlates with its test
++    code in:
++
++    `org.apache.accumulo.server.test.scalability.tests.<ID>`
++
++    This ID correlates with a config file:
++
++    `conf/<ID>.conf`
++
++To run the test, specify its ID to the run.py script.
++
++> `$ nohup ./run.py Ingest > test1.log 2>&1 &`
++
++A timestamped directory will be created, and results are placed in it as each
++test completes.
++
+diff --git a/test/system/test1/README b/test/system/test1/README
+deleted file mode 100644
+index 8003b3d..0000000
+--- a/test/system/test1/README
++++ /dev/null
+@@ -1,26 +0,0 @@
+-Command to run from command line
+-
+-#Can run this test with pre-existing splits... use the following command to create the table with
+-#100 pre-existing splits 
+-
+-#../../../bin/accumulo 'org.apache.accumulo.server.test.TestIngest$CreateTable' 0 5000000 100 <user> <pw>
+-
+-#could try running verify commands after stopping and restarting accumulo
+-
+-#when write ahead log is implemented can try killing tablet server in middle of ingest
+-
+-#run 5 parallel ingesters and verify
+-. ingest_test.sh
+-wait
+-. verify_test.sh
+-wait
+-
+-#overwrite previous ingest
+-. ingest_test_2.sh
+-wait
+-. verify_test_2.sh
+-wait
+-
+-#delete what was previously ingested
+-. ingest_test_3.sh
+-wait
+diff --git a/test/system/test1/README.md b/test/system/test1/README.md
+new file mode 100644
+index 0000000..ee2de5a
+--- /dev/null
++++ b/test/system/test1/README.md
+@@ -0,0 +1,29 @@
++Command to run from command line
++
++Can run this test with pre-existing splits; use the following command to create the table with
++100 pre-existing splits 
++
++> `$ ../../../bin/accumulo 'org.apache.accumulo.server.test.TestIngest$CreateTable' \  
++0 5000000 100 <user> <pw>`
++
++Could try running verify commands after stopping and restarting accumulo
++
++When write ahead log is implemented can try killing tablet server in middle of ingest
++
++Run 5 parallel ingesters and verify:
++
++> `$ . ingest_test.sh`  
++(wait)  
++`$ . verify_test.sh`  
++(wait)
++
++Overwrite previous ingest:
++> `$ . ingest_test_2.sh`  
++(wait)  
++`$ . verify_test_2.sh`  
++(wait)
++
++Delete what was previously ingested:
++> `$ . ingest_test_3.sh`  
++(wait)
++
+diff --git a/test/system/test2/README b/test/system/test2/README
+deleted file mode 100644
+index 0994068..0000000
+--- a/test/system/test2/README
++++ /dev/null
+@@ -1,6 +0,0 @@
+-this test concurrently reads and writes data to accumulo...
+-
+-Can run this test with pre-existing splits... use the following command to create the table with
+-100 pre-existing splits 
+-
+-hadoop jar ../../../lib/accumulo.jar 'org.apache.accumulo.server.test.TestIngest$CreateTable' 0 5000000 100
+diff --git a/test/system/test2/README.md b/test/system/test2/README.md
+new file mode 100644
+index 0000000..09cbc7a
+--- /dev/null
++++ b/test/system/test2/README.md
+@@ -0,0 +1,9 @@
++Test Concurrent Read/Write
++==========================
++
++Can run this test with pre-existing splits; use the following command to create the table with
++100 pre-existing splits:
++
++> `$ hadoop jar ../../../lib/accumulo.jar \   
++'org.apache.accumulo.server.test.TestIngest$CreateTable' 0 5000000 100`
++
+diff --git a/test/system/test3/README b/test/system/test3/README
+deleted file mode 100644
+index 569b92e..0000000
+--- a/test/system/test3/README
++++ /dev/null
+@@ -1,2 +0,0 @@
+-Test creating a big row that will not split
+-
+diff --git a/test/system/test3/README.md b/test/system/test3/README.md
+new file mode 100644
+index 0000000..5aaff23
+--- /dev/null
++++ b/test/system/test3/README.md
+@@ -0,0 +1,5 @@
++Test Creating Big Non-Splittable Row
++====================================
++
++TBD
++
+diff --git a/test/system/test4/README b/test/system/test4/README
+deleted file mode 100644
+index 8a87842..0000000
+--- a/test/system/test4/README
++++ /dev/null
+@@ -1,6 +0,0 @@
+-Test bulk importing data
+-
+-Can run this test with pre-existing splits... use the following command to create the table with
+-100 pre-existing splits 
+-
+-hadoop jar ../../../lib/accumulo.jar 'org.apache.accumulo.server.test.TestIngest$CreateTable' 0 5000000 100
+diff --git a/test/system/test4/README.md b/test/system/test4/README.md
+new file mode 100644
+index 0000000..3f03fc3
+--- /dev/null
++++ b/test/system/test4/README.md
+@@ -0,0 +1,9 @@
++Test Bulk Importing Data
++========================
++
++Can run this test with pre-existing splits... use the following command to create the table with
++100 pre-existing splits 
++
++> `$ hadoop jar ../../../lib/accumulo.jar \   
++'org.apache.accumulo.server.test.TestIngest$CreateTable' 0 5000000 100`
++
+-- 
+1.8.3.4 (Apple Git-47)
+
