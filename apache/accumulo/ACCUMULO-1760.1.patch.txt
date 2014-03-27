@@ -1,0 +1,48 @@
+From 30383a7bce122a98ad1dda0601f1c9ab2d1728f3 Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@clouderagovt.com>
+Date: Wed, 26 Mar 2014 11:45:04 -0400
+Subject: [PATCH] ACCUMULO-1760 added commit strategy to git wip web page
+
+---
+ git.mdtext | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/git.mdtext b/git.mdtext
+index 114fdbd..c371895 100644
+--- a/git.mdtext
++++ b/git.mdtext
+@@ -143,6 +143,24 @@ Jira issue ACCUMULO-12345 that affects 1.5.0 release.
+ 
+     `git commit -av`
+ 
++    Please include the ticket number at the beginning of the log message, and
++    in the first line, as it's easier to parse quickly. For example:
++
++    `ACCUMULO-2428 throw exception when rename fails after compaction`
++
++    Consider following the git log message format described in
++    [Zach Holman's talk](http://zachholman.com/talk/more-git-and-github-secrets/)
++    (specifically slides 78-98, beginning at 15:20 into the video). Essentially,
++    leave a short descriptive message in the first line, skip a line, and write
++    more detailed stuff there, if you need to. For example:
++
++    `ACCUMULO-2194 Add delay for randomwalk Security teardown`
++
++    `If two Security randomwalk tests run back-to-back, the second test may see that the
++    table user still exists even though it was removed when the first test was torn down.
++    This can happen if the user drop does not propagate through Zookeeper quickly enough.
++    This commit adds a delay to the end of the Security test to give ZK some time.`
++
+ 6. Assuming others are developing against the version you also are, as you
+    work, or before you create your patch, rebase your branch against the remote
+    to lift your changes to the top of your branch. The branch specified here should be the same one you used in step 4.
+@@ -487,4 +505,4 @@ For the sake of clarity, some examples of common situations are included below.
+ 
+     `git checkout 1.6.1-SNAPSHOT && git merge 1.5.1-SNAPSHOT`
+ 
+- [1]: https://cwiki.apache.org/confluence/display/KAFKA/Patch+submission+and+review#Patchsubmissionandreview-Simplecontributorworkflow
+\ No newline at end of file
++ [1]: https://cwiki.apache.org/confluence/display/KAFKA/Patch+submission+and+review#Patchsubmissionandreview-Simplecontributorworkflow
+-- 
+1.8.3.4 (Apple Git-47)
+
