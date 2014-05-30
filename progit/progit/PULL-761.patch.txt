@@ -1,0 +1,27 @@
+From f5170bb2e34131c7088236066d13d1f657dfa381 Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@clouderagovt.com>
+Date: Fri, 16 May 2014 12:41:42 -0400
+Subject: [PATCH] Update command line output in Chapter 2
+
+The command line output in the examples is slightly inconsistent with the
+latest version; git doesn't strip content from the commit message.
+---
+ en/02-git-basics/01-chapter2.markdown | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/en/02-git-basics/01-chapter2.markdown b/en/02-git-basics/01-chapter2.markdown
+index 8090ba3..74784dc 100644
+--- a/en/02-git-basics/01-chapter2.markdown
++++ b/en/02-git-basics/01-chapter2.markdown
+@@ -324,7 +324,7 @@ You can see that the default commit message contains the latest output of the `g
+ Alternatively, you can type your commit message inline with the `commit` command by specifying it after a `-m` flag, like this:
+ 
+ 	$ git commit -m "Story 182: Fix benchmarks for speed"
+-	[master 463dc4f] Fix benchmarks for speed
++	[master 463dc4f] Story 182: Fix benchmarks for speed
+ 	 2 files changed, 3 insertions(+)
+ 	 create mode 100644 README
+ 
+-- 
+1.8.3.4 (Apple Git-47)
+
