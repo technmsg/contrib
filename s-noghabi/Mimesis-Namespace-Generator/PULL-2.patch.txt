@@ -1,0 +1,25 @@
+From 7229feb729d78c4dcf135998b32c64befcb080ef Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@clouderagovt.com>
+Date: Thu, 19 Jun 2014 14:24:40 -0400
+Subject: [PATCH] Specify location of sample output.
+
+---
+ README.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/README.md b/README.md
+index 5f798eb..ec767cf 100644
+--- a/README.md
++++ b/README.md
+@@ -59,7 +59,7 @@ Output:
+   NOTE: Path /0 corresponds to the root of the namespace hierarchy
+ 
+   A sample namespace generated with the default configuration file has been
+-  provided too, in "output_file.txt".
++  provided too, in `bin/output_file.txt`.
+ 
+   Also, the statistics of the distributions create by this tool are written 
+   in files under the output folder. Each file contains the CDF of a
+distribution
+-- 
+2.0.3
