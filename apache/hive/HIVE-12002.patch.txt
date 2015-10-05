@@ -1,0 +1,85 @@
+From 86604f64f0635fbcbcf45edfa740031a3fa785b4 Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@cloudera.com>
+Date: Wed, 30 Sep 2015 15:10:21 -0400
+Subject: [PATCH] HIVE-12002: correct typo in HiveMetaStore INFO log
+
+---
+ beeline/src/java/org/apache/hive/beeline/HiveSchemaHelper.java        | 4 ++--
+ hcatalog/conf/proto-hive-site.xml                                     | 2 +-
+ hcatalog/src/packages/templates/conf/hive-site.xml.template           | 2 +-
+ .../src/java/org/apache/hadoop/hive/metastore/HiveMetaStore.java      | 2 +-
+ .../org/apache/hadoop/hive/metastore/AlternateFailurePreListener.java | 2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/beeline/src/java/org/apache/hive/beeline/HiveSchemaHelper.java b/beeline/src/java/org/apache/hive/beeline/HiveSchemaHelper.java
+index a6b11ba..7e8cc67 100644
+--- a/beeline/src/java/org/apache/hive/beeline/HiveSchemaHelper.java
++++ b/beeline/src/java/org/apache/hive/beeline/HiveSchemaHelper.java
+@@ -165,7 +165,7 @@ public String buildCommand(String scriptDir, String scriptFile)
+   }
+ 
+   /***
+-   * Base implemenation of NestedScriptParser
++   * Base implementation of NestedScriptParser
+    * abstractCommandParser.
+    *
+    */
+@@ -494,4 +494,4 @@ public static NestedScriptParser getDbCommandParser(String dbName,
+       throw new IllegalArgumentException("Unknown dbType " + dbName);
+     }
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/hcatalog/conf/proto-hive-site.xml b/hcatalog/conf/proto-hive-site.xml
+index 7df7f46..5530511 100644
+--- a/hcatalog/conf/proto-hive-site.xml
++++ b/hcatalog/conf/proto-hive-site.xml
+@@ -91,7 +91,7 @@
+ <property>
+   <name>hive.semantic.analyzer.factory.impl</name>
+   <value>org.apache.hive.hcatalog.cli.HCatSemanticAnalyzerFactory</value>
+-  <description>controls which SemanticAnalyzerFactory implemenation class is used by CLI</description>
++  <description>controls which SemanticAnalyzerFactory implementation class is used by CLI</description>
+ </property>
+ 
+ <property>
+diff --git a/hcatalog/src/packages/templates/conf/hive-site.xml.template b/hcatalog/src/packages/templates/conf/hive-site.xml.template
+index 5f89f4a..638aa35 100644
+--- a/hcatalog/src/packages/templates/conf/hive-site.xml.template
++++ b/hcatalog/src/packages/templates/conf/hive-site.xml.template
+@@ -88,7 +88,7 @@
+ <property>
+   <name>hive.semantic.analyzer.factory.impl</name>
+   <value>org.apache.hive.hcatalog.cli.HCatSemanticAnalyzerFactory</value>
+-  <description>controls which SemanticAnalyzerFactory implemenation class is used by CLI</description>
++  <description>controls which SemanticAnalyzerFactory implementation class is used by CLI</description>
+ </property>
+ 
+ <property>
+diff --git a/metastore/src/java/org/apache/hadoop/hive/metastore/HiveMetaStore.java b/metastore/src/java/org/apache/hadoop/hive/metastore/HiveMetaStore.java
+index 815f499..d7fd1ee 100644
+--- a/metastore/src/java/org/apache/hadoop/hive/metastore/HiveMetaStore.java
++++ b/metastore/src/java/org/apache/hadoop/hive/metastore/HiveMetaStore.java
+@@ -594,7 +594,7 @@ private TxnHandler getTxnHandler() {
+     }
+ 
+     private RawStore newRawStore() throws MetaException {
+-      LOG.info(addPrefix("Opening raw store with implemenation class:"
++      LOG.info(addPrefix("Opening raw store with implementation class:"
+           + rawStoreClassName));
+       Configuration conf = getConf();
+ 
+diff --git a/metastore/src/test/org/apache/hadoop/hive/metastore/AlternateFailurePreListener.java b/metastore/src/test/org/apache/hadoop/hive/metastore/AlternateFailurePreListener.java
+index e5c983b..22146ba 100644
+--- a/metastore/src/test/org/apache/hadoop/hive/metastore/AlternateFailurePreListener.java
++++ b/metastore/src/test/org/apache/hadoop/hive/metastore/AlternateFailurePreListener.java
+@@ -29,7 +29,7 @@
+  *
+  * AlternateFailurePreListener.
+  *
+- * An implemenation of MetaStorePreEventListener which fails every other time it's invoked,
++ * An implementation of MetaStorePreEventListener which fails every other time it's invoked,
+  * starting with the first time.
+  *
+  * It also records and makes available the number of times it's been invoked.
