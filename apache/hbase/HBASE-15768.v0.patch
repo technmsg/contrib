@@ -1,0 +1,973 @@
+From 0cb2053e9783ac208c47f212770719f1aade4ab5 Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@cloudera.com>
+Date: Wed, 4 May 2016 15:17:43 -0500
+Subject: [PATCH] HBASE-15768 fix capitalization of ZooKeeper usage
+
+---
+ bin/hbase                                          |  2 +-
+ bin/hbase.cmd                                      |  2 +-
+ conf/hbase-env.cmd                                 |  2 +-
+ conf/hbase-env.sh                                  |  2 +-
+ .../archetypes/exemplars/client/HelloHBase.java    |  4 +--
+ .../exemplars/shaded_client/HelloHBase.java        |  4 +--
+ .../hadoop/hbase/client/ZooKeeperRegistry.java     |  4 +--
+ .../hbase/replication/ReplicationPeersZKImpl.java  |  2 +-
+ .../hbase/replication/ReplicationQueuesZKImpl.java |  2 +-
+ .../replication/ReplicationTrackerZKImpl.java      |  2 +-
+ .../hbase/zookeeper/RecoverableZooKeeper.java      |  6 ++---
+ .../org/apache/hadoop/hbase/zookeeper/ZKUtil.java  |  4 +--
+ .../hadoop/hbase/master/MetricsMasterSource.java   |  2 +-
+ .../hadoop/hbase/master/MetricsMasterWrapper.java  |  4 +--
+ .../regionserver/MetricsRegionServerSource.java    |  2 +-
+ .../regionserver/MetricsRegionServerWrapper.java   |  4 +--
+ .../hadoop/hbase/DistributedHBaseCluster.java      |  6 ++---
+ .../apache/hadoop/hbase/HBaseClusterManager.java   |  2 +-
+ .../test/IntegrationTestZKAndFSPermissions.java    |  2 +-
+ .../hbase/tmpl/master/MasterStatusTmpl.jamon       |  4 +--
+ .../hbase/tmpl/regionserver/RSStatusTmpl.jamon     |  2 +-
+ .../apache/hadoop/hbase/ZKNamespaceManager.java    |  2 +-
+ .../java/org/apache/hadoop/hbase/ZNodeClearer.java |  2 +-
+ .../coordination/ZkSplitLogWorkerCoordination.java |  2 +-
+ .../master/procedure/CreateNamespaceProcedure.java |  6 ++---
+ .../master/procedure/DeleteNamespaceProcedure.java |  6 ++---
+ .../master/procedure/ModifyNamespaceProcedure.java |  6 ++---
+ .../hadoop/hbase/mob/mapreduce/SweepJob.java       |  2 +-
+ .../hbase/mob/mapreduce/SweepJobNodeTracker.java   |  2 +-
+ .../hadoop/hbase/regionserver/HMobStore.java       |  2 +-
+ .../regionserver/ReplicationSyncUp.java            |  2 +-
+ .../hbase/security/access/ZKPermissionWatcher.java |  6 ++---
+ .../token/AuthenticationTokenSecretManager.java    |  6 ++---
+ .../visibility/ZKVisibilityLabelWatcher.java       |  4 +--
+ .../org/apache/hadoop/hbase/util/HBaseFsck.java    |  2 +-
+ .../zookeeper/lock/ZKInterProcessLockBase.java     |  2 +-
+ .../src/main/resources/hbase-webapps/master/zk.jsp |  2 +-
+ .../hbase/TestIPv6NIOServerSocketChannel.java      |  2 +-
+ .../TestMasterCoprocessorExceptionWithRemove.java  |  2 +-
+ .../hadoop/hbase/filter/FilterTestingCluster.java  |  2 +-
+ .../hadoop/hbase/filter/TestFilterWrapper.java     |  2 +-
+ .../hadoop/hbase/zookeeper/TestZooKeeperACL.java   |  8 +++---
+ src/main/asciidoc/_chapters/configuration.adoc     |  8 +++---
+ src/main/asciidoc/_chapters/getting_started.adoc   |  4 +--
+ src/main/asciidoc/_chapters/ops_mgt.adoc           |  2 +-
+ src/main/asciidoc/_chapters/zookeeper.adoc         | 30 +++++++++++-----------
+ 46 files changed, 89 insertions(+), 89 deletions(-)
+
+diff --git a/bin/hbase b/bin/hbase
+index be519ac..1653c5a 100755
+--- a/bin/hbase
++++ b/bin/hbase
+@@ -92,7 +92,7 @@ if [ $# = 0 ]; then
+   echo "  zkcli           Run the ZooKeeper shell"
+   echo "  master          Run an HBase HMaster node"
+   echo "  regionserver    Run an HBase HRegionServer node" 
+-  echo "  zookeeper       Run a Zookeeper server"
++  echo "  zookeeper       Run a ZooKeeper server"
+   echo "  rest            Run an HBase REST server" 
+   echo "  thrift          Run the HBase Thrift server" 
+   echo "  thrift2         Run the HBase Thrift2 server"
+diff --git a/bin/hbase.cmd b/bin/hbase.cmd
+index d5f39a4..57a0cb4 100644
+--- a/bin/hbase.cmd
++++ b/bin/hbase.cmd
+@@ -423,7 +423,7 @@ goto :eof
+   echo   zkcli           Run the ZooKeeper shell
+   echo   master          Run an HBase HMaster node
+   echo   regionserver    Run an HBase HRegionServer node
+-  echo   zookeeper       Run a Zookeeper server
++  echo   zookeeper       Run a ZooKeeper server
+   echo   rest            Run an HBase REST server
+   echo   thrift          Run the HBase Thrift server
+   echo   thrift2         Run the HBase Thrift2 server
+diff --git a/conf/hbase-env.cmd b/conf/hbase-env.cmd
+index a40be8e..eb31b1b 100644
+--- a/conf/hbase-env.cmd
++++ b/conf/hbase-env.cmd
+@@ -83,5 +83,5 @@ set HBASE_REGIONSERVER_OPTS=%HBASE_REGIONSERVER_OPTS% "-XX:PermSize=128m" "-XX:M
+ @rem otherwise arrive faster than the master can service them.
+ @rem set HBASE_SLAVE_SLEEP=0.1
+ 
+-@rem Tell HBase whether it should manage it's own instance of Zookeeper or not.
++@rem Tell HBase whether it should manage it's own instance of ZooKeeper or not.
+ @rem set HBASE_MANAGES_ZK=true
+diff --git a/conf/hbase-env.sh b/conf/hbase-env.sh
+index 5ce959b..c45e7a5 100644
+--- a/conf/hbase-env.sh
++++ b/conf/hbase-env.sh
+@@ -124,7 +124,7 @@ export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS -XX:PermSize=128m -XX:M
+ # otherwise arrive faster than the master can service them.
+ # export HBASE_SLAVE_SLEEP=0.1
+ 
+-# Tell HBase whether it should manage it's own instance of Zookeeper or not.
++# Tell HBase whether it should manage it's own instance of ZooKeeper or not.
+ # export HBASE_MANAGES_ZK=true
+ 
+ # The default log rolling policy is RFA, where the log file is rolled as per the size defined for the 
+diff --git a/hbase-archetypes/hbase-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/client/HelloHBase.java b/hbase-archetypes/hbase-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/client/HelloHBase.java
+index c5b1b6a..e327541 100644
+--- a/hbase-archetypes/hbase-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/client/HelloHBase.java
++++ b/hbase-archetypes/hbase-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/client/HelloHBase.java
+@@ -62,14 +62,14 @@ public final class HelloHBase {
+     /**
+      * ConnectionFactory#createConnection() automatically looks for
+      * hbase-site.xml (HBase configuration parameters) on the system's
+-     * CLASSPATH, to enable creation of Connection to HBase via Zookeeper.
++     * CLASSPATH, to enable creation of Connection to HBase via ZooKeeper.
+      */
+     try (Connection connection = ConnectionFactory.createConnection();
+             Admin admin = connection.getAdmin()) {
+ 
+       admin.getClusterStatus(); // assure connection successfully established
+       System.out.println("\n*** Hello HBase! -- Connection has been "
+-              + "established via Zookeeper!!\n");
++              + "established via ZooKeeper!!\n");
+ 
+       createNamespaceAndTable(admin);
+ 
+diff --git a/hbase-archetypes/hbase-shaded-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/shaded_client/HelloHBase.java b/hbase-archetypes/hbase-shaded-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/shaded_client/HelloHBase.java
+index 1c6b8bb..94a1e71 100644
+--- a/hbase-archetypes/hbase-shaded-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/shaded_client/HelloHBase.java
++++ b/hbase-archetypes/hbase-shaded-client-project/src/main/java/org/apache/hbase/archetypes/exemplars/shaded_client/HelloHBase.java
+@@ -62,14 +62,14 @@ public final class HelloHBase {
+     /**
+      * ConnectionFactory#createConnection() automatically looks for
+      * hbase-site.xml (HBase configuration parameters) on the system's
+-     * CLASSPATH, to enable creation of Connection to HBase via Zookeeper.
++     * CLASSPATH, to enable creation of Connection to HBase via ZooKeeper.
+      */
+     try (Connection connection = ConnectionFactory.createConnection();
+             Admin admin = connection.getAdmin()) {
+ 
+       admin.getClusterStatus(); // assure connection successfully established
+       System.out.println("\n*** Hello HBase! -- Connection has been "
+-              + "established via Zookeeper!!\n");
++              + "established via ZooKeeper!!\n");
+ 
+       createNamespaceAndTable(admin);
+ 
+diff --git a/hbase-client/src/main/java/org/apache/hadoop/hbase/client/ZooKeeperRegistry.java b/hbase-client/src/main/java/org/apache/hadoop/hbase/client/ZooKeeperRegistry.java
+index 5aabb0c..9208f6e 100644
+--- a/hbase-client/src/main/java/org/apache/hadoop/hbase/client/ZooKeeperRegistry.java
++++ b/hbase-client/src/main/java/org/apache/hadoop/hbase/client/ZooKeeperRegistry.java
+@@ -104,9 +104,9 @@ class ZooKeeperRegistry implements Registry {
+         LOG.info("ClusterId read in ZooKeeper is null");
+       }
+     } catch (KeeperException e) {
+-      LOG.warn("Can't retrieve clusterId from Zookeeper", e);
++      LOG.warn("Can't retrieve clusterId from ZooKeeper", e);
+     } catch (IOException e) {
+-      LOG.warn("Can't retrieve clusterId from Zookeeper", e);
++      LOG.warn("Can't retrieve clusterId from ZooKeeper", e);
+     } finally {
+       if (zkw != null) zkw.close();
+     }
+diff --git a/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationPeersZKImpl.java b/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationPeersZKImpl.java
+index 916eaf8..bd3930d 100644
+--- a/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationPeersZKImpl.java
++++ b/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationPeersZKImpl.java
+@@ -48,7 +48,7 @@ import org.apache.zookeeper.KeeperException;
+ import org.apache.zookeeper.KeeperException.NoNodeException;
+ 
+ /**
+- * This class provides an implementation of the ReplicationPeers interface using Zookeeper. The
++ * This class provides an implementation of the ReplicationPeers interface using ZooKeeper. The
+  * peers znode contains a list of all peer replication clusters and the current replication state of
+  * those clusters. It has one child peer znode for each peer cluster. The peer znode is named with
+  * the cluster id provided by the user in the HBase shell. The value of the peer znode contains the
+diff --git a/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationQueuesZKImpl.java b/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationQueuesZKImpl.java
+index 764b5b0..2bb8ea8 100644
+--- a/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationQueuesZKImpl.java
++++ b/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationQueuesZKImpl.java
+@@ -41,7 +41,7 @@ import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
+ import org.apache.zookeeper.KeeperException;
+ 
+ /**
+- * This class provides an implementation of the ReplicationQueues interface using Zookeeper. The
++ * This class provides an implementation of the ReplicationQueues interface using ZooKeeper. The
+  * base znode that this class works at is the myQueuesZnode. The myQueuesZnode contains a list of
+  * all outstanding WAL files on this region server that need to be replicated. The myQueuesZnode is
+  * the regionserver name (a concatenation of the region server’s hostname, client port and start
+diff --git a/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationTrackerZKImpl.java b/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationTrackerZKImpl.java
+index f9f2d43..6e4983e 100644
+--- a/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationTrackerZKImpl.java
++++ b/hbase-client/src/main/java/org/apache/hadoop/hbase/replication/ReplicationTrackerZKImpl.java
+@@ -34,7 +34,7 @@ import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
+ import org.apache.zookeeper.KeeperException;
+ 
+ /**
+- * This class is a Zookeeper implementation of the ReplicationTracker interface. This class is
++ * This class is a ZooKeeper implementation of the ReplicationTracker interface. This class is
+  * responsible for handling replication events that are defined in the ReplicationListener
+  * interface.
+  */
+diff --git a/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/RecoverableZooKeeper.java b/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/RecoverableZooKeeper.java
+index c1eb214..e3c3b8c 100644
+--- a/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/RecoverableZooKeeper.java
++++ b/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/RecoverableZooKeeper.java
+@@ -130,9 +130,9 @@ public class RecoverableZooKeeper {
+   }
+ 
+   /**
+-   * Try to create a Zookeeper connection. Turns any exception encountered into a
++   * Try to create a ZooKeeper connection. Turns any exception encountered into a
+    * KeeperException.OperationTimeoutException so it can retried.
+-   * @return The created Zookeeper connection object
++   * @return The created ZooKeeper connection object
+    * @throws KeeperException
+    */
+   protected synchronized ZooKeeper checkZk() throws KeeperException {
+@@ -153,7 +153,7 @@ public class RecoverableZooKeeper {
+       LOG.info("Closing dead ZooKeeper connection, session" +
+         " was: 0x"+Long.toHexString(zk.getSessionId()));
+       zk.close();
+-      // reset the Zookeeper connection
++      // reset the ZooKeeper connection
+       zk = null;
+     }
+     checkZk();
+diff --git a/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/ZKUtil.java b/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/ZKUtil.java
+index 9e01d09..ff2e21f 100644
+--- a/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/ZKUtil.java
++++ b/hbase-client/src/main/java/org/apache/hadoop/hbase/zookeeper/ZKUtil.java
+@@ -922,7 +922,7 @@ public class ZKUtil {
+         }
+         if (!groups.isEmpty()) {
+           LOG.warn("Znode ACL setting for group " + groups
+-              + " is skipped, Zookeeper doesn't support this feature presently.");
++              + " is skipped, ZooKeeper doesn't support this feature presently.");
+         }
+       }
+       // Certain znodes are accessed directly by the client,
+@@ -1392,7 +1392,7 @@ public class ZKUtil {
+     }
+     List<ZKUtilOp> ops = new ArrayList<ZKUtil.ZKUtilOp>();
+     for (String eachRoot : pathRoots) {
+-      // Zookeeper Watches are one time triggers; When children of parent nodes are deleted
++      // ZooKeeper Watches are one time triggers; When children of parent nodes are deleted
+       // recursively, must set another watch, get notified of delete node
+       List<String> children = listChildrenBFSAndWatchThem(zkw, eachRoot);
+       // Delete the leaves first and eventually get rid of the root
+diff --git a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterSource.java b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterSource.java
+index 290b8f5..6995198 100644
+--- a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterSource.java
++++ b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterSource.java
+@@ -68,7 +68,7 @@ public interface MetricsMasterSource extends BaseSource {
+   String NUMBER_OF_REGION_SERVERS_DESC = "Number of RegionServers";
+   String DEAD_REGION_SERVERS_DESC = "Names of dead RegionServers";
+   String NUMBER_OF_DEAD_REGION_SERVERS_DESC = "Number of dead RegionServers";
+-  String ZOOKEEPER_QUORUM_DESC = "Zookeeper Quorum";
++  String ZOOKEEPER_QUORUM_DESC = "ZooKeeper Quorum";
+   String SERVER_NAME_DESC = "Server Name";
+   String CLUSTER_ID_DESC = "Cluster Id";
+   String IS_ACTIVE_MASTER_DESC = "Is Active Master";
+diff --git a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterWrapper.java b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterWrapper.java
+index 5e67f83..64e0a8a 100644
+--- a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterWrapper.java
++++ b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/master/MetricsMasterWrapper.java
+@@ -44,9 +44,9 @@ public interface MetricsMasterWrapper {
+   String getClusterId();
+ 
+   /**
+-   * Get the Zookeeper Quorum Info
++   * Get the ZooKeeper Quorum Info
+    *
+-   * @return Zookeeper Quorum Info
++   * @return ZooKeeper Quorum Info
+    */
+   String getZookeeperQuorum();
+ 
+diff --git a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerSource.java b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerSource.java
+index 06f3dc3..a80745d 100644
+--- a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerSource.java
++++ b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerSource.java
+@@ -326,7 +326,7 @@ public interface MetricsRegionServerSource extends BaseSource, JvmPauseMonitorSo
+   String SERVER_NAME_NAME = "serverName";
+   String CLUSTER_ID_NAME = "clusterId";
+   String RS_START_TIME_DESC = "RegionServer Start Time";
+-  String ZOOKEEPER_QUORUM_DESC = "Zookeeper Quorum";
++  String ZOOKEEPER_QUORUM_DESC = "ZooKeeper Quorum";
+   String SERVER_NAME_DESC = "Server Name";
+   String CLUSTER_ID_DESC = "Cluster Id";
+   String UPDATES_BLOCKED_TIME = "updatesBlockedTime";
+diff --git a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerWrapper.java b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerWrapper.java
+index cf0c7ac..0aa625c 100644
+--- a/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerWrapper.java
++++ b/hbase-hadoop-compat/src/main/java/org/apache/hadoop/hbase/regionserver/MetricsRegionServerWrapper.java
+@@ -37,9 +37,9 @@ public interface MetricsRegionServerWrapper {
+   String getClusterId();
+ 
+   /**
+-   * Get the Zookeeper Quorum Info
++   * Get the ZooKeeper Quorum Info
+    *
+-   * @return Zookeeper Quorum Info
++   * @return ZooKeeper Quorum Info
+    */
+   String getZookeeperQuorum();
+ 
+diff --git a/hbase-it/src/test/java/org/apache/hadoop/hbase/DistributedHBaseCluster.java b/hbase-it/src/test/java/org/apache/hadoop/hbase/DistributedHBaseCluster.java
+index 31ca996..c83c5e4 100644
+--- a/hbase-it/src/test/java/org/apache/hadoop/hbase/DistributedHBaseCluster.java
++++ b/hbase-it/src/test/java/org/apache/hadoop/hbase/DistributedHBaseCluster.java
+@@ -131,20 +131,20 @@ public class DistributedHBaseCluster extends HBaseCluster {
+ 
+   @Override
+   public void startZkNode(String hostname, int port) throws IOException {
+-    LOG.info("Starting Zookeeper node on: " + hostname);
++    LOG.info("Starting ZooKeeper node on: " + hostname);
+     clusterManager.start(ServiceType.ZOOKEEPER_SERVER, hostname, port);
+   }
+ 
+   @Override
+   public void killZkNode(ServerName serverName) throws IOException {
+-    LOG.info("Aborting Zookeeper node on: " + serverName.getServerName());
++    LOG.info("Aborting ZooKeeper node on: " + serverName.getServerName());
+     clusterManager.kill(ServiceType.ZOOKEEPER_SERVER,
+       serverName.getHostname(), serverName.getPort());
+   }
+ 
+   @Override
+   public void stopZkNode(ServerName serverName) throws IOException {
+-    LOG.info("Stopping Zookeeper node: " + serverName.getServerName());
++    LOG.info("Stopping ZooKeeper node: " + serverName.getServerName());
+     clusterManager.stop(ServiceType.ZOOKEEPER_SERVER,
+       serverName.getHostname(), serverName.getPort());
+   }
+diff --git a/hbase-it/src/test/java/org/apache/hadoop/hbase/HBaseClusterManager.java b/hbase-it/src/test/java/org/apache/hadoop/hbase/HBaseClusterManager.java
+index ba6a4a9..f13102d 100644
+--- a/hbase-it/src/test/java/org/apache/hadoop/hbase/HBaseClusterManager.java
++++ b/hbase-it/src/test/java/org/apache/hadoop/hbase/HBaseClusterManager.java
+@@ -252,7 +252,7 @@ public class HBaseClusterManager extends Configured implements ClusterManager {
+       String tmp = conf.get("hbase.it.clustermanager.zookeeper.conf.dir",
+           System.getenv("ZOOCFGDIR"));
+       if (zookeeperHome == null) {
+-        throw new IOException("Zookeeper home configuration parameter i.e. " +
++        throw new IOException("ZooKeeper home configuration parameter i.e. " +
+           "'hbase.it.clustermanager.zookeeper.home' is not configured properly.");
+       }
+       if (tmp != null) {
+diff --git a/hbase-it/src/test/java/org/apache/hadoop/hbase/test/IntegrationTestZKAndFSPermissions.java b/hbase-it/src/test/java/org/apache/hadoop/hbase/test/IntegrationTestZKAndFSPermissions.java
+index 3845846..018b406 100644
+--- a/hbase-it/src/test/java/org/apache/hadoop/hbase/test/IntegrationTestZKAndFSPermissions.java
++++ b/hbase-it/src/test/java/org/apache/hadoop/hbase/test/IntegrationTestZKAndFSPermissions.java
+@@ -53,7 +53,7 @@ import org.junit.experimental.categories.Category;
+ /**
+  * An integration test which checks that the znodes in zookeeper and data in the FileSystem
+  * are protected for secure HBase deployments.
+- * This test is intended to be run on clusters with kerberos authorization for HBase and Zookeeper.
++ * This test is intended to be run on clusters with kerberos authorization for HBase and ZooKeeper.
+  *
+  * If hbase.security.authentication is not set to kerberos, the test does not run unless -f is
+  * specified which bypasses the check. It is recommended to always run with -f on secure clusters
+diff --git a/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/master/MasterStatusTmpl.jamon b/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/master/MasterStatusTmpl.jamon
+index 4b1c192..38bcf22 100644
+--- a/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/master/MasterStatusTmpl.jamon
++++ b/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/master/MasterStatusTmpl.jamon
+@@ -273,13 +273,13 @@ AssignmentManager assignmentManager = master.getAssignmentManager();
+                     <td>When ZooKeeper client version was compiled</td>
+                 </tr>
+                 <tr>
+-                    <td>Zookeeper Quorum</td>
++                    <td>ZooKeeper Quorum</td>
+                     <%escape #n>
+                     <td> <% formatZKString() %> </td>
+                     <td>Addresses of all registered ZK servers. For more, see <a href="/zk.jsp">zk dump</a>.</td>
+                 </tr>
+                 <tr>
+-                    <td>Zookeeper Base Path</td>
++                    <td>ZooKeeper Base Path</td>
+                     <td> <% master.getZooKeeper().getBaseZNode() %></td>
+                     <td>Root node of this cluster in ZK.</td>
+                 </tr>
+diff --git a/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/regionserver/RSStatusTmpl.jamon b/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/regionserver/RSStatusTmpl.jamon
+index b98f50d..21e9b9f 100644
+--- a/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/regionserver/RSStatusTmpl.jamon
++++ b/hbase-server/src/main/jamon/org/apache/hadoop/hbase/tmpl/regionserver/RSStatusTmpl.jamon
+@@ -172,7 +172,7 @@ org.apache.hadoop.hbase.zookeeper.MasterAddressTracker;
+             <td>When ZooKeeper client version was compiled</td>
+         </tr>
+         <tr>
+-            <td>Zookeeper Quorum</td>
++            <td>ZooKeeper Quorum</td>
+             <td><% regionServer.getZooKeeper().getQuorum() %></td>
+             <td>Addresses of all registered ZK servers</td>
+         </tr>
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/ZKNamespaceManager.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/ZKNamespaceManager.java
+index b0aabb2..ee59c01 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/ZKNamespaceManager.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/ZKNamespaceManager.java
+@@ -156,7 +156,7 @@ public class ZKNamespaceManager extends ZooKeeperListener {
+         refreshNodes(nodes);
+       } catch (KeeperException ke) {
+         LOG.error("Error reading data from zookeeper for path "+path, ke);
+-        watcher.abort("Zookeeper error get node children for path "+path, ke);
++        watcher.abort("ZooKeeper error get node children for path "+path, ke);
+       } catch (IOException e) {
+         LOG.error("Error deserializing namespace child from: "+path, e);
+         watcher.abort("Error deserializing namespace child from: " + path, e);
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/ZNodeClearer.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/ZNodeClearer.java
+index e68a068..652cbc0 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/ZNodeClearer.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/ZNodeClearer.java
+@@ -197,7 +197,7 @@ public class ZNodeClearer {
+       LOG.warn("Can't read the content of the znode file", e);
+       return false;
+     } catch (KeeperException e) {
+-      LOG.warn("Zookeeper exception deleting znode", e);
++      LOG.warn("ZooKeeper exception deleting znode", e);
+       return false;
+     } finally {
+       zkw.close();
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/coordination/ZkSplitLogWorkerCoordination.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/coordination/ZkSplitLogWorkerCoordination.java
+index 7e6708e..2687f2e 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/coordination/ZkSplitLogWorkerCoordination.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/coordination/ZkSplitLogWorkerCoordination.java
+@@ -146,7 +146,7 @@ public class ZkSplitLogWorkerCoordination extends ZooKeeperListener implements
+             ZKSplitLogManagerCoordination.DEFAULT_TIMEOUT) / 3);
+   }
+ 
+-  /* Support functions for Zookeeper async callback */
++  /* Support functions for ZooKeeper async callback */
+ 
+   void getDataSetWatchFailure(String path) {
+     synchronized (grabTaskLock) {
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/CreateNamespaceProcedure.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/CreateNamespaceProcedure.java
+index d8daab7..a9a0968 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/CreateNamespaceProcedure.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/CreateNamespaceProcedure.java
+@@ -298,7 +298,7 @@ public class CreateNamespaceProcedure
+   }
+ 
+   /**
+-   * Update Zookeeper.
++   * Update ZooKeeper.
+    * @param env MasterProcedureEnv
+    * @param nsDescriptor NamespaceDescriptor
+    * @throws IOException
+@@ -310,7 +310,7 @@ public class CreateNamespaceProcedure
+   }
+ 
+   /**
+-   * rollback Zookeeper update.
++   * rollback ZooKeeper update.
+    * @param env MasterProcedureEnv
+    * @throws IOException
+    */
+@@ -373,4 +373,4 @@ public class CreateNamespaceProcedure
+     // the client does not know about this procedures.
+     return !isBootstrapNamespace();
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/DeleteNamespaceProcedure.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/DeleteNamespaceProcedure.java
+index 30844df..bd71aa3 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/DeleteNamespaceProcedure.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/DeleteNamespaceProcedure.java
+@@ -292,7 +292,7 @@ public class DeleteNamespaceProcedure
+   }
+ 
+   /**
+-   * remove from Zookeeper.
++   * remove from ZooKeeper.
+    * @param env MasterProcedureEnv
+    * @param namespaceName name of the namespace in string format
+    * @throws IOException
+@@ -304,7 +304,7 @@ public class DeleteNamespaceProcedure
+   }
+ 
+   /**
+-   * undo the remove from Zookeeper
++   * undo the remove from ZooKeeper
+    * @param env MasterProcedureEnv
+    * @throws IOException
+    */
+@@ -401,4 +401,4 @@ public class DeleteNamespaceProcedure
+     }
+     return traceEnabled;
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/ModifyNamespaceProcedure.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/ModifyNamespaceProcedure.java
+index 78334e8..1f885bd 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/ModifyNamespaceProcedure.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/master/procedure/ModifyNamespaceProcedure.java
+@@ -251,7 +251,7 @@ public class ModifyNamespaceProcedure
+   }
+ 
+   /**
+-   * Update Zookeeper.
++   * Update ZooKeeper.
+    * @param env MasterProcedureEnv
+    * @throws IOException
+    */
+@@ -260,7 +260,7 @@ public class ModifyNamespaceProcedure
+   }
+ 
+   /**
+-   * Update Zookeeper during undo.
++   * Update ZooKeeper during undo.
+    * @param env MasterProcedureEnv
+    * @throws IOException
+    */
+@@ -285,4 +285,4 @@ public class ModifyNamespaceProcedure
+     }
+     return traceEnabled;
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJob.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJob.java
+index 6d06dfc..79cd39c 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJob.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJob.java
+@@ -135,7 +135,7 @@ public class SweepJob {
+    * The running of the sweep tool on the same column family are mutually exclusive.
+    * The HBase major compaction and running of the sweep tool on the same column family
+    * are mutually exclusive.
+-   * The synchronization is done by the Zookeeper.
++   * The synchronization is done by the ZooKeeper.
+    * So in the beginning of the running, we need to make sure only this sweep tool is the only one
+    * that is currently running in this column family, and in this column family there're no major
+    * compaction in progress.
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJobNodeTracker.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJobNodeTracker.java
+index dea67a4..e7f6907 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJobNodeTracker.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/mob/mapreduce/SweepJobNodeTracker.java
+@@ -58,7 +58,7 @@ public class SweepJobNodeTracker extends ZooKeeperListener {
+    * Registers the watcher on the sweep job node.
+    * If there's no such a sweep job node, or it's not created by the sweep job that
+    * owns the current MR, the current process will be aborted.
+-   * This assumes the table lock uses the Zookeeper. It's a workaround and only used
++   * This assumes the table lock uses the ZooKeeper. It's a workaround and only used
+    * in the sweep tool, and the sweep tool will be removed after the mob file compaction
+    * is finished.
+    */
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/HMobStore.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/HMobStore.java
+index 54b942d..bfa1f80 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/HMobStore.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/regionserver/HMobStore.java
+@@ -462,7 +462,7 @@ public class HMobStore extends HStore {
+     // If it's major compaction, try to find whether there's a sweeper is running
+     // If yes, mark the major compaction as retainDeleteMarkers
+     if (compaction.getRequest().isAllFiles()) {
+-      // Use the Zookeeper to coordinate.
++      // Use the ZooKeeper to coordinate.
+       // 1. Acquire a operation lock.
+       //   1.1. If no, mark the major compaction as retainDeleteMarkers and continue the compaction.
+       //   1.2. If the lock is obtained, search the node of sweeping.
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/replication/regionserver/ReplicationSyncUp.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/replication/regionserver/ReplicationSyncUp.java
+index b86de12..bfc6421 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/replication/regionserver/ReplicationSyncUp.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/replication/regionserver/ReplicationSyncUp.java
+@@ -40,7 +40,7 @@ import org.apache.hadoop.util.ToolRunner;
+ /**
+  * In a scenario of Replication based Disaster/Recovery, when hbase
+  * Master-Cluster crashes, this tool is used to sync-up the delta from Master to
+- * Slave using the info from Zookeeper. The tool will run on Master-Cluser, and
++ * Slave using the info from ZooKeeper. The tool will run on Master-Cluser, and
+  * assume ZK, Filesystem and NetWork still available after hbase crashes
+  *
+  * hbase org.apache.hadoop.hbase.replication.regionserver.ReplicationSyncUp
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/security/access/ZKPermissionWatcher.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/security/access/ZKPermissionWatcher.java
+index b3aa782..c4b3219 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/security/access/ZKPermissionWatcher.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/security/access/ZKPermissionWatcher.java
+@@ -130,7 +130,7 @@ public class ZKPermissionWatcher extends ZooKeeperListener implements Closeable
+           } catch (KeeperException ke) {
+             LOG.error("Error reading data from zookeeper", ke);
+             // only option is to abort
+-            watcher.abort("Zookeeper error obtaining acl node children", ke);
++            watcher.abort("ZooKeeper error obtaining acl node children", ke);
+           }
+         }
+       });
+@@ -170,7 +170,7 @@ public class ZKPermissionWatcher extends ZooKeeperListener implements Closeable
+           } catch (KeeperException ke) {
+             LOG.error("Error reading data from zookeeper for node " + entry, ke);
+             // only option is to abort
+-            watcher.abort("Zookeeper error getting data for node " + entry, ke);
++            watcher.abort("ZooKeeper error getting data for node " + entry, ke);
+           } catch (IOException ioe) {
+             LOG.error("Error reading permissions writables", ioe);
+           }
+@@ -196,7 +196,7 @@ public class ZKPermissionWatcher extends ZooKeeperListener implements Closeable
+         }
+       } catch (KeeperException ke) {
+         LOG.error("Error reading data from zookeeper for path "+path, ke);
+-        watcher.abort("Zookeeper error get node children for path "+path, ke);
++        watcher.abort("ZooKeeper error get node children for path "+path, ke);
+       }
+       executor.submit(new Runnable() {
+         // allows subsequent nodeChildrenChanged event to preempt current processing of
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/security/token/AuthenticationTokenSecretManager.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/security/token/AuthenticationTokenSecretManager.java
+index de66827..5b488a9 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/security/token/AuthenticationTokenSecretManager.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/security/token/AuthenticationTokenSecretManager.java
+@@ -107,7 +107,7 @@ public class AuthenticationTokenSecretManager
+       // try to become leader
+       this.leaderElector.start();
+     } catch (KeeperException ke) {
+-      LOG.error("Zookeeper initialization failed", ke);
++      LOG.error("ZooKeeper initialization failed", ke);
+     }
+   }
+ 
+@@ -145,9 +145,9 @@ public class AuthenticationTokenSecretManager
+     AuthenticationKey masterKey = allKeys.get(identifier.getKeyId());
+     if(masterKey == null) {
+       if(zkWatcher.getWatcher().isAborted()) {
+-        LOG.error("ZookeeperWatcher is abort");
++        LOG.error("ZooKeeperWatcher is abort");
+         throw new InvalidToken("Token keys could not be sync from zookeeper"
+-            + " because of ZookeeperWatcher abort");
++            + " because of ZooKeeperWatcher abort");
+       }
+       synchronized (this) {
+         if (!leaderElector.isAlive() || leaderElector.isStopped()) {
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/security/visibility/ZKVisibilityLabelWatcher.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/security/visibility/ZKVisibilityLabelWatcher.java
+index 4941a54..f30136f 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/security/visibility/ZKVisibilityLabelWatcher.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/security/visibility/ZKVisibilityLabelWatcher.java
+@@ -95,7 +95,7 @@ public class ZKVisibilityLabelWatcher extends ZooKeeperListener {
+       } catch (KeeperException ke) {
+         LOG.error("Error setting watcher on node " + path, ke);
+         // only option is to abort
+-        watcher.abort("Zookeeper error obtaining label node children", ke);
++        watcher.abort("ZooKeeper error obtaining label node children", ke);
+       }
+     }
+   }
+@@ -119,7 +119,7 @@ public class ZKVisibilityLabelWatcher extends ZooKeeperListener {
+       } catch (KeeperException ke) {
+         LOG.error("Error reading data from zookeeper for node " + path, ke);
+         // only option is to abort
+-        watcher.abort("Zookeeper error getting data for node " + path, ke);
++        watcher.abort("ZooKeeper error getting data for node " + path, ke);
+       }
+     }
+   }
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/util/HBaseFsck.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/util/HBaseFsck.java
+index 31ae925..eec5ea4 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/util/HBaseFsck.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/util/HBaseFsck.java
+@@ -1741,7 +1741,7 @@ public class HBaseFsck extends Configured implements Closeable {
+         HConstants.EMPTY_START_ROW, false, false);
+     if (rl == null) {
+       errors.reportError(ERROR_CODE.NULL_META_REGION,
+-          "META region was not found in Zookeeper");
++          "META region was not found in ZooKeeper");
+       return false;
+     }
+     for (HRegionLocation metaLocation : rl.getRegionLocations()) {
+diff --git a/hbase-server/src/main/java/org/apache/hadoop/hbase/zookeeper/lock/ZKInterProcessLockBase.java b/hbase-server/src/main/java/org/apache/hadoop/hbase/zookeeper/lock/ZKInterProcessLockBase.java
+index a6371cc..090acf7 100644
+--- a/hbase-server/src/main/java/org/apache/hadoop/hbase/zookeeper/lock/ZKInterProcessLockBase.java
++++ b/hbase-server/src/main/java/org/apache/hadoop/hbase/zookeeper/lock/ZKInterProcessLockBase.java
+@@ -111,7 +111,7 @@ public abstract class ZKInterProcessLockBase implements InterProcessLock {
+     private ZNodeComparator() {
+     }
+ 
+-    /** Parses sequenceId from the znode name. Zookeeper documentation
++    /** Parses sequenceId from the znode name. ZooKeeper documentation
+      * states: The sequence number is always fixed length of 10 digits, 0 padded
+      */
+     public static long getChildSequenceId(String childZNode) {
+diff --git a/hbase-server/src/main/resources/hbase-webapps/master/zk.jsp b/hbase-server/src/main/resources/hbase-webapps/master/zk.jsp
+index 0649554..687c950 100644
+--- a/hbase-server/src/main/resources/hbase-webapps/master/zk.jsp
++++ b/hbase-server/src/main/resources/hbase-webapps/master/zk.jsp
+@@ -75,7 +75,7 @@
+         <div class="container-fluid content">
+             <div class="row inner_header">
+                 <div class="page-header">
+-                    <h1>Zookeeper Dump</h1>
++                    <h1>ZooKeeper Dump</h1>
+                 </div>
+             </div>
+             <div class="row">
+diff --git a/hbase-server/src/test/java/org/apache/hadoop/hbase/TestIPv6NIOServerSocketChannel.java b/hbase-server/src/test/java/org/apache/hadoop/hbase/TestIPv6NIOServerSocketChannel.java
+index ecbdb5d..a598bff 100644
+--- a/hbase-server/src/test/java/org/apache/hadoop/hbase/TestIPv6NIOServerSocketChannel.java
++++ b/hbase-server/src/test/java/org/apache/hadoop/hbase/TestIPv6NIOServerSocketChannel.java
+@@ -36,7 +36,7 @@ import org.junit.experimental.categories.Category;
+ import org.junit.rules.TestRule;
+ 
+ /**
+- * This tests whether ServerSocketChannel works over ipv6, which Zookeeper
++ * This tests whether ServerSocketChannel works over ipv6, which ZooKeeper
+  * depends on. On Windows Oracle JDK 6, creating a ServerSocketChannel throws
+  * java.net.SocketException: Address family not supported by protocol family
+  * exception. It is a known JVM bug, seems to be only resolved for JDK7:
+diff --git a/hbase-server/src/test/java/org/apache/hadoop/hbase/coprocessor/TestMasterCoprocessorExceptionWithRemove.java b/hbase-server/src/test/java/org/apache/hadoop/hbase/coprocessor/TestMasterCoprocessorExceptionWithRemove.java
+index 5048c73..bbb855c 100644
+--- a/hbase-server/src/test/java/org/apache/hadoop/hbase/coprocessor/TestMasterCoprocessorExceptionWithRemove.java
++++ b/hbase-server/src/test/java/org/apache/hadoop/hbase/coprocessor/TestMasterCoprocessorExceptionWithRemove.java
+@@ -169,7 +169,7 @@ public class TestMasterCoprocessorExceptionWithRemove {
+         new Abortable() {
+           @Override
+           public void abort(String why, Throwable e) {
+-            throw new RuntimeException("Fatal Zookeeper tracker error, why=", e);
++            throw new RuntimeException("Fatal ZooKeeper tracker error, why=", e);
+           }
+           @Override
+           public boolean isAborted() {
+diff --git a/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/FilterTestingCluster.java b/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/FilterTestingCluster.java
+index bf61681..e587096 100644
+--- a/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/FilterTestingCluster.java
++++ b/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/FilterTestingCluster.java
+@@ -104,7 +104,7 @@ public class FilterTestingCluster {
+     } catch (MasterNotRunningException e) {
+       assertNull("Master is not running", e);
+     } catch (ZooKeeperConnectionException e) {
+-      assertNull("Cannot connect to Zookeeper", e);
++      assertNull("Cannot connect to ZooKeeper", e);
+     } catch (IOException e) {
+       assertNull("IOException", e);
+     }
+diff --git a/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/TestFilterWrapper.java b/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/TestFilterWrapper.java
+index 9e1c011..4d7c808 100644
+--- a/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/TestFilterWrapper.java
++++ b/hbase-server/src/test/java/org/apache/hadoop/hbase/filter/TestFilterWrapper.java
+@@ -180,7 +180,7 @@ public class TestFilterWrapper {
+     } catch (MasterNotRunningException e) {
+       assertNull("Master is not running", e);
+     } catch (ZooKeeperConnectionException e) {
+-      assertNull("Cannot connect to Zookeeper", e);
++      assertNull("Cannot connect to ZooKeeper", e);
+     } catch (IOException e) {
+       assertNull("Caught IOException", e);
+     }
+diff --git a/hbase-server/src/test/java/org/apache/hadoop/hbase/zookeeper/TestZooKeeperACL.java b/hbase-server/src/test/java/org/apache/hadoop/hbase/zookeeper/TestZooKeeperACL.java
+index 50e886a..3f474b4 100644
+--- a/hbase-server/src/test/java/org/apache/hadoop/hbase/zookeeper/TestZooKeeperACL.java
++++ b/hbase-server/src/test/java/org/apache/hadoop/hbase/zookeeper/TestZooKeeperACL.java
+@@ -113,7 +113,7 @@ public class TestZooKeeperACL {
+ 
+   /**
+    * Create a node and check its ACL. When authentication is enabled on 
+-   * Zookeeper, all nodes (except /hbase/root-region-server, /hbase/master
++   * ZooKeeper, all nodes (except /hbase/root-region-server, /hbase/master
+    * and /hbase/hbaseid) should be created so that only the hbase server user
+    * (master or region server user) that created them can access them, and
+    * this user should have all permissions on this node. For
+@@ -138,7 +138,7 @@ public class TestZooKeeperACL {
+   }
+ 
+   /**
+-   * When authentication is enabled on Zookeeper, /hbase/root-region-server
++   * When authentication is enabled on ZooKeeper, /hbase/root-region-server
+    * should be created with 2 ACLs: one specifies that the hbase user has
+    * full access to the node; the other, that it is world-readable.
+    */
+@@ -175,7 +175,7 @@ public class TestZooKeeperACL {
+   }
+ 
+   /**
+-   * When authentication is enabled on Zookeeper, /hbase/master should be
++   * When authentication is enabled on ZooKeeper, /hbase/master should be
+    * created with 2 ACLs: one specifies that the hbase user has full access
+    * to the node; the other, that it is world-readable.
+    */
+@@ -211,7 +211,7 @@ public class TestZooKeeperACL {
+   }
+ 
+   /**
+-   * When authentication is enabled on Zookeeper, /hbase/hbaseid should be
++   * When authentication is enabled on ZooKeeper, /hbase/hbaseid should be
+    * created with 2 ACLs: one specifies that the hbase user has full access
+    * to the node; the other, that it is world-readable.
+    */
+diff --git a/src/main/asciidoc/_chapters/configuration.adoc b/src/main/asciidoc/_chapters/configuration.adoc
+index 6aefd5a..d705db9 100644
+--- a/src/main/asciidoc/_chapters/configuration.adoc
++++ b/src/main/asciidoc/_chapters/configuration.adoc
+@@ -411,7 +411,7 @@ Set [var]+JAVA_HOME+ to point at the root of your +java+ install.
+ This is the default mode.
+ Standalone mode is what is described in the <<quickstart,quickstart>> section.
+ In standalone mode, HBase does not use HDFS -- it uses the local filesystem instead -- and it runs all HBase daemons and a local ZooKeeper all up in the same JVM.
+-Zookeeper binds to a well known port so clients may talk to HBase.
++ZooKeeper binds to a well known port so clients may talk to HBase.
+ 
+ [[distributed]]
+ === Distributed
+@@ -453,7 +453,7 @@ In addition, the cluster is configured so that multiple cluster nodes enlist as
+ These configuration basics are all demonstrated in <<quickstart_fully_distributed,quickstart-fully-distributed>>.
+ 
+ .Distributed RegionServers
+-Typically, your cluster will contain multiple RegionServers all running on different servers, as well as primary and backup Master and Zookeeper daemons.
++Typically, your cluster will contain multiple RegionServers all running on different servers, as well as primary and backup Master and ZooKeeper daemons.
+ The _conf/regionservers_ file on the master server contains a list of hosts whose RegionServers are associated with this cluster.
+ Each host is on a separate line.
+ All hosts listed in this file will have their RegionServer processes started and stopped when the master server starts or stops.
+@@ -703,8 +703,8 @@ Below we show what the main configuration files -- _hbase-site.xml_, _regionserv
+     <name>hbase.cluster.distributed</name>
+     <value>true</value>
+     <description>The mode the cluster will be in. Possible values are
+-      false: standalone and pseudo-distributed setups with managed Zookeeper
+-      true: fully-distributed with unmanaged Zookeeper Quorum (see hbase-env.sh)
++      false: standalone and pseudo-distributed setups with managed ZooKeeper
++      true: fully-distributed with unmanaged ZooKeeper Quorum (see hbase-env.sh)
+     </description>
+   </property>
+ </configuration>
+diff --git a/src/main/asciidoc/_chapters/getting_started.adoc b/src/main/asciidoc/_chapters/getting_started.adoc
+index 7ef91b0..276a908 100644
+--- a/src/main/asciidoc/_chapters/getting_started.adoc
++++ b/src/main/asciidoc/_chapters/getting_started.adoc
+@@ -288,7 +288,7 @@ $
+ === Intermediate - Pseudo-Distributed Local Install
+ 
+ After working your way through <<quickstart,quickstart>>, you can re-configure HBase to run in pseudo-distributed mode.
+-Pseudo-distributed mode means that HBase still runs completely on a single host, but each HBase daemon (HMaster, HRegionServer, and Zookeeper) runs as a separate process.
++Pseudo-distributed mode means that HBase still runs completely on a single host, but each HBase daemon (HMaster, HRegionServer, and ZooKeeper) runs as a separate process.
+ By default, unless you configure the `hbase.rootdir` property as described in <<quickstart,quickstart>>, your data is still stored in _/tmp/_.
+ In this walk-through, we store your data in HDFS instead, assuming you have HDFS available.
+ You can skip the HDFS configuration to continue storing your data in the local filesystem.
+@@ -429,7 +429,7 @@ You can stop HBase the same way as in the <<quickstart,quickstart>> procedure, u
+ 
+ In reality, you need a fully-distributed configuration to fully test HBase and to use it in real-world scenarios.
+ In a distributed configuration, the cluster contains multiple nodes, each of which runs one or more HBase daemon.
+-These include primary and backup Master instances, multiple Zookeeper nodes, and multiple RegionServer nodes.
++These include primary and backup Master instances, multiple ZooKeeper nodes, and multiple RegionServer nodes.
+ 
+ This advanced quickstart adds two more nodes to your cluster.
+ The architecture will be as follows:
+diff --git a/src/main/asciidoc/_chapters/ops_mgt.adoc b/src/main/asciidoc/_chapters/ops_mgt.adoc
+index 6a10493..4c9c7c5 100644
+--- a/src/main/asciidoc/_chapters/ops_mgt.adoc
++++ b/src/main/asciidoc/_chapters/ops_mgt.adoc
+@@ -57,7 +57,7 @@ Some commands take arguments. Pass no args or -h for usage.
+   upgrade         Upgrade hbase
+   master          Run an HBase HMaster node
+   regionserver    Run an HBase HRegionServer node
+-  zookeeper       Run a Zookeeper server
++  zookeeper       Run a ZooKeeper server
+   rest            Run an HBase REST server
+   thrift          Run the HBase Thrift server
+   thrift2         Run the HBase Thrift2 server
+diff --git a/src/main/asciidoc/_chapters/zookeeper.adoc b/src/main/asciidoc/_chapters/zookeeper.adoc
+index 565ef98..ee76d80 100644
+--- a/src/main/asciidoc/_chapters/zookeeper.adoc
++++ b/src/main/asciidoc/_chapters/zookeeper.adoc
+@@ -108,7 +108,7 @@ If running zookeeper 3.5+, you can ask hbase to make use of the new multi operat
+ .ZooKeeper Maintenance
+ [CAUTION]
+ ====
+-Be sure to set up the data dir cleaner described under link:http://zookeeper.apache.org/doc/r3.1.2/zookeeperAdmin.html#sc_maintenance[Zookeeper
++Be sure to set up the data dir cleaner described under link:http://zookeeper.apache.org/doc/r3.1.2/zookeeperAdmin.html#sc_maintenance[ZooKeeper
+         Maintenance] else you could have 'interesting' problems a couple of months in; i.e.
+ zookeeper could start dropping sessions if it has to run through a directory of hundreds of thousands of logs which is wont to do around leader reelection time -- a process rare but run on occasion whether because a machine is dropped or happens to hiccup.
+ ====
+@@ -120,7 +120,7 @@ To point HBase at an existing ZooKeeper cluster, one that is not managed by HBas
+ ----
+ 
+   ...
+-  # Tell HBase whether it should manage its own instance of Zookeeper or not.
++  # Tell HBase whether it should manage its own instance of ZooKeeper or not.
+   export HBASE_MANAGES_ZK=false
+ ----
+ 
+@@ -145,10 +145,10 @@ Additionally, see the link:http://wiki.apache.org/hadoop/ZooKeeper/FAQ#A7[ZooKee
+ [[zk.sasl.auth]]
+ == SASL Authentication with ZooKeeper
+ 
+-Newer releases of Apache HBase (>= 0.92) will support connecting to a ZooKeeper Quorum that supports SASL authentication (which is available in Zookeeper versions 3.4.0 or later).
++Newer releases of Apache HBase (>= 0.92) will support connecting to a ZooKeeper Quorum that supports SASL authentication (which is available in ZooKeeper versions 3.4.0 or later).
+ 
+ This describes how to set up HBase to mutually authenticate with a ZooKeeper Quorum.
+-ZooKeeper/HBase mutual authentication (link:https://issues.apache.org/jira/browse/HBASE-2418[HBASE-2418]) is required as part of a complete secure HBase configuration (link:https://issues.apache.org/jira/browse/HBASE-3025[HBASE-3025]). For simplicity of explication, this section ignores additional configuration required (Secure HDFS and Coprocessor configuration). It's recommended to begin with an HBase-managed Zookeeper configuration (as opposed to a standalone Zookeeper quorum) for ease of learning.
++ZooKeeper/HBase mutual authentication (link:https://issues.apache.org/jira/browse/HBASE-2418[HBASE-2418]) is required as part of a complete secure HBase configuration (link:https://issues.apache.org/jira/browse/HBASE-3025[HBASE-3025]). For simplicity of explication, this section ignores additional configuration required (Secure HDFS and Coprocessor configuration). It's recommended to begin with an HBase-managed ZooKeeper configuration (as opposed to a standalone ZooKeeper quorum) for ease of learning.
+ 
+ === Operating System Prerequisites
+ 
+@@ -165,7 +165,7 @@ Each user who will be an HBase client should also be given a Kerberos principal.
+ This principal should usually have a password assigned to it (as opposed to, as with the HBase servers, a keytab file) which only this user knows.
+ The client's principal's `maxrenewlife` should be set so that it can be renewed enough so that the user can complete their HBase client processes.
+ For example, if a user runs a long-running HBase client process that takes at most 3 days, we might create this user's principal within `kadmin` with: `addprinc -maxrenewlife 3days`.
+-The Zookeeper client and server libraries manage their own ticket refreshment by running threads that wake up periodically to do the refreshment.
++The ZooKeeper client and server libraries manage their own ticket refreshment by running threads that wake up periodically to do the refreshment.
+ 
+ On each host that will run an HBase client (e.g. `hbase shell`), add the following file to the HBase home directory's _conf_ directory:
+ 
+@@ -181,7 +181,7 @@ Client {
+ 
+ We'll refer to this JAAS configuration file as _$CLIENT_CONF_        below.
+ 
+-=== HBase-managed Zookeeper Configuration
++=== HBase-managed ZooKeeper Configuration
+ 
+ On each node that will run a zookeeper, a master, or a regionserver, create a link:http://docs.oracle.com/javase/1.4.2/docs/guide/security/jgss/tutorials/LoginConfigFile.html[JAAS]        configuration file in the conf directory of the node's _HBASE_HOME_        directory that looks like the following:
+ 
+@@ -207,7 +207,7 @@ Client {
+ 
+ where the _$PATH_TO_HBASE_KEYTAB_ and _$PATH_TO_ZOOKEEPER_KEYTAB_ files are what you created above, and `$HOST` is the hostname for that node.
+ 
+-The `Server` section will be used by the Zookeeper quorum server, while the `Client` section will be used by the HBase master and regionservers.
++The `Server` section will be used by the ZooKeeper quorum server, while the `Client` section will be used by the HBase master and regionservers.
+ The path to this file should be substituted for the text _$HBASE_SERVER_CONF_ in the _hbase-env.sh_ listing below.
+ 
+ The path to this file should be substituted for the text _$CLIENT_CONF_ in the _hbase-env.sh_ listing below.
+@@ -255,7 +255,7 @@ Modify your _hbase-site.xml_ on each node that will run zookeeper, master or reg
+ </configuration>
+ ----
+ 
+-where `$ZK_NODES` is the comma-separated list of hostnames of the Zookeeper Quorum hosts.
++where `$ZK_NODES` is the comma-separated list of hostnames of the ZooKeeper Quorum hosts.
+ 
+ Start your hbase cluster by running one or more of the following set of commands on the appropriate hosts:
+ 
+@@ -266,7 +266,7 @@ bin/hbase master start
+ bin/hbase regionserver start
+ ----
+ 
+-=== External Zookeeper Configuration
++=== External ZooKeeper Configuration
+ 
+ Add a JAAS configuration file that looks like:
+ 
+@@ -326,7 +326,7 @@ Modify your _hbase-site.xml_ on each node that will run a master or regionserver
+ </configuration>
+ ----
+ 
+-where `$ZK_NODES` is the comma-separated list of hostnames of the Zookeeper Quorum hosts.
++where `$ZK_NODES` is the comma-separated list of hostnames of the ZooKeeper Quorum hosts.
+ 
+ Also on each of these hosts, create a JAAS configuration file containing:
+ 
+@@ -346,7 +346,7 @@ Server {
+ where `$HOST` is the hostname of each Quorum host.
+ We will refer to the full pathname of this file as _$ZK_SERVER_CONF_ below.
+ 
+-Start your Zookeepers on each Zookeeper Quorum host with:
++Start your ZooKeepers on each ZooKeeper Quorum host with:
+ 
+ [source,bourne]
+ ----
+@@ -362,9 +362,9 @@ bin/hbase master start
+ bin/hbase regionserver start
+ ----
+ 
+-=== Zookeeper Server Authentication Log Output
++=== ZooKeeper Server Authentication Log Output
+ 
+-If the configuration above is successful, you should see something similar to the following in your Zookeeper server logs:
++If the configuration above is successful, you should see something similar to the following in your ZooKeeper server logs:
+ 
+ ----
+ 
+@@ -382,9 +382,9 @@ If the configuration above is successful, you should see something similar to th
+ 11/12/05 22:43:59 INFO server.ZooKeeperServer: adding SASL authorization for authorizationID: hbase
+ ----
+ 
+-=== Zookeeper Client Authentication Log Output
++=== ZooKeeper Client Authentication Log Output
+ 
+-On the Zookeeper client side (HBase master or regionserver), you should see something similar to the following:
++On the ZooKeeper client side (HBase master or regionserver), you should see something similar to the following:
+ 
+ ----
+ 
+-- 
+1.8.3.4 (Apple Git-47)
+
