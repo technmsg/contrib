@@ -1,0 +1,34 @@
+From af12923da4f86fa4736036ee0f4a201725f666a0 Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@cloudera.com>
+Date: Thu, 19 Apr 2018 10:17:23 -0400
+Subject: [PATCH] NIFI-5097 This closes #2647. add client-side HTTP redirect to
+ error index.jsp
+
+Existing web error index page suggests user may have meant /nifi/ and crafts a contextPath link, may as well redirect them automatically. Non-human (i.e. curl/wget) can still retrieve the original source without being redirected.
+
+Signed-off-by: joewitt <joewitt@apache.org>
+---
+ .../nifi-framework/nifi-web/nifi-web-error/src/main/webapp/index.jsp   | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/nifi-nar-bundles/nifi-framework-bundle/nifi-framework/nifi-web/nifi-web-error/src/main/webapp/index.jsp b/nifi-nar-bundles/nifi-framework-bundle/nifi-framework/nifi-web/nifi-web-error/src/main/webapp/index.jsp
+index 37ea6423a8..c7cfa921f5 100644
+--- a/nifi-nar-bundles/nifi-framework-bundle/nifi-framework/nifi-web/nifi-web-error/src/main/webapp/index.jsp
++++ b/nifi-nar-bundles/nifi-framework-bundle/nifi-framework/nifi-web/nifi-web-error/src/main/webapp/index.jsp
+@@ -32,6 +32,7 @@
+     <link rel="stylesheet" href="<%= contextPath %>/nifi/assets/font-awesome/css/font-awesome.min.css" type="text/css"/>
+     <link rel="stylesheet" href="<%= contextPath %>/nifi/css/message-pane.css" type="text/css"/>
+     <link rel="stylesheet" href="<%= contextPath %>/nifi/css/message-page.css" type="text/css"/>
++    <meta http-equiv="Refresh" content="5; url=<%= contextPath %>/nifi/">
+ </head>
+ 
+ <body class="message-pane">
+@@ -39,7 +40,7 @@
+     <p class="message-pane-title">
+         Did you mean: <a href="<%= contextPath %>/nifi/">/nifi</a>
+     </p>
+-    <p class="message-pane-content">You may have mistyped...</p>
++    <p class="message-pane-content">You may have mistyped... but we'll try to redirect you in 5 seconds.</p>
+ </div>
+ </body>
+ </html>
