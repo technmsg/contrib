@@ -1,0 +1,22 @@
+From 4bd68e218207b9c05eb1dfd3cb75c9fedb70b0c6 Mon Sep 17 00:00:00 2001
+From: Alex Moundalexis <alexm@cloudera.com>
+Date: Tue, 4 Dec 2018 13:50:59 -0500
+Subject: [PATCH] ozone: fix typo on index.html
+
+---
+ ozone/layouts/index.html | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ozone/layouts/index.html b/ozone/layouts/index.html
+index 06d896ec97..dd3653e551 100644
+--- a/ozone/layouts/index.html
++++ b/ozone/layouts/index.html
+@@ -52,7 +52,7 @@ <h4><span class="glyphicon glyphicon-sort-by-attributes" aria-hidden="true"></sp
+                 <h4><span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
+                    Consistent</h4>
+                 <p>
+-                    Storage Layer uses RAFT protocol for consistentency.
++                    Storage Layer uses RAFT protocol for consistency.
+                 </p>
+             </div>
+             <div class="col-md-4 col-sm-4 feature-item">
