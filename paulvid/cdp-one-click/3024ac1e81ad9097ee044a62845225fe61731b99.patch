@@ -1,0 +1,361 @@
+From 3024ac1e81ad9097ee044a62845225fe61731b99 Mon Sep 17 00:00:00 2001
+From: Paul Vidal <paul.vid@gmail.com>
+Date: Wed, 13 Jan 2021 10:06:15 -0500
+Subject: [PATCH] Merge pull request #61 from alexm/gcp-fixes
+
+---
+ README.md                                   |  2 ++
+ cdp_create_gcp_datalake.sh                  |  4 +--
+ cdp_delete_all_the_things.sh                |  2 +-
+ cdp_gcp_create_group_iam.sh                 |  6 ++--
+ cdp_gcp_pre_reqs.sh                         | 22 ++++++++++---
+ gcp-pre-req/gcp_check_if_resource_exists.sh |  6 ++--
+ gcp-pre-req/gcp_create_buckets.sh           |  4 +--
+ gcp-pre-req/gcp_create_iam.sh               | 35 ++++++++++++---------
+ gcp-pre-req/gcp_create_service_account.sh   |  6 ++--
+ gcp-pre-req/gcp_delete_iam.sh               |  6 ++--
+ gcp-pre-req/gcp_delete_network.sh           | 13 ++++----
+ gcp-pre-req/gcp_delete_service_account.sh   |  4 +--
+ 12 files changed, 67 insertions(+), 43 deletions(-)
+
+diff --git a/README.md b/README.md
+index 8cf27c8..abf301d 100644
+--- a/README.md
++++ b/README.md
+@@ -282,3 +282,5 @@ Note: some flags require dev cli, not for public consumption, use at your own ri
+ **Mike Riggs** - [LinkedIn](https://www.linkedin.com/in/mriggs/)
+ 
+ **Ryan Cicak** - [LinkedIn](https://www.linkedin.com/in/ryan-cicak-66221a47/)
++
++**Alex Moundalexis** - [LinkedIn](https://www.linkedin.com/in/moundalexis/)
+diff --git a/cdp_create_gcp_datalake.sh b/cdp_create_gcp_datalake.sh
+index 8f023a7..edddf22 100755
+--- a/cdp_create_gcp_datalake.sh
++++ b/cdp_create_gcp_datalake.sh
+@@ -78,14 +78,14 @@ if [ ${rds_ha} -eq 1 ]
+ then 
+     cdp datalake create-gcp-datalake --datalake-name $1-cdp-dl \
+         --environment-name $1-cdp-env \
+-        --cloud-provider-configuration "serviceAccountEmail=${prefix}-idbroker-sa@${project}.iam.gserviceaccount.com,storageLocation=gs://$prefix-cdp-data" \
++        --cloud-provider-configuration "serviceAccountEmail=${prefix}-idb-sa@${project}.iam.gserviceaccount.com,storageLocation=gs://$prefix-cdp-data" \
+         --scale $2 
+         
+         # --tags $(flatten_tags "$TAGS") \ commenting out for now
+ else
+     cdp datalake create-gcp-datalake --datalake-name $1-cdp-dl \
+         --environment-name $1-cdp-env \
+-        --cloud-provider-configuration "serviceAccountEmail=${prefix}-idbroker-sa@${project}.iam.gserviceaccount.com,storageLocation=gs://$prefix-cdp-data" \
++        --cloud-provider-configuration "serviceAccountEmail=${prefix}-idb-sa@${project}.iam.gserviceaccount.com,storageLocation=gs://$prefix-cdp-data" \
+         --scale $2 \
+         --database-availability-type NONE
+ fi
+diff --git a/cdp_delete_all_the_things.sh b/cdp_delete_all_the_things.sh
+index 9ed78ba..faec689 100755
+--- a/cdp_delete_all_the_things.sh
++++ b/cdp_delete_all_the_things.sh
+@@ -485,7 +485,7 @@ if [[ ${cloud_provider} == "gcp" ]]; then
+     echo ${underline}
+     echo ""
+ 
+-    result=$($base_dir/gcp-pre-req/gcp_delete_network.sh $prefix 2>&1 >/dev/null)
++    result=$($base_dir/gcp-pre-req/gcp_delete_network.sh $prefix $region 2>&1 >/dev/null)
+     echo "${CHECK_MARK}  $prefix: network deleted"
+ 
+     result=$($base_dir/gcp-pre-req/gcp_delete_iam.sh $prefix 2>&1 >/dev/null)
+diff --git a/cdp_gcp_create_group_iam.sh b/cdp_gcp_create_group_iam.sh
+index cd6626f..6dfabce 100755
+--- a/cdp_gcp_create_group_iam.sh
++++ b/cdp_gcp_create_group_iam.sh
+@@ -95,6 +95,6 @@ fi
+ 
+ cdp environments set-id-broker-mappings \
+                --environment-name "$2-cdp-env" \
+-               --baseline-role "${prefix}-ranger-audit-sa@${project}.iam.gserviceaccount.com" \
+-               --data-access-role "${prefix}-datalake-admin-sa@${project}.iam.gserviceaccount.com" \
+-               --mappings accessorCrn="$user_crn",role="${prefix}-datalake-admin-sa@${project}.iam.gserviceaccount.com"
++               --baseline-role "${prefix}-rgraud-sa@${project}.iam.gserviceaccount.com" \
++               --data-access-role "${prefix}-dladm-sa@${project}.iam.gserviceaccount.com" \
++               --mappings accessorCrn="$user_crn",role="${prefix}-dladm-sa@${project}.iam.gserviceaccount.com"
+diff --git a/cdp_gcp_pre_reqs.sh b/cdp_gcp_pre_reqs.sh
+index 2c1b65e..5f8b556 100755
+--- a/cdp_gcp_pre_reqs.sh
++++ b/cdp_gcp_pre_reqs.sh
+@@ -15,7 +15,7 @@ Usage:
+     $(basename "$0") <parameter_file> [--help or -h]
+ 
+ Description:
+-    Creates AWS pre-requisites
++    Creates GCP pre-requisites
+ 
+ Arguments:
+     parameter_file: location of your parameter json file (template can be found in parameters_template.json)"
+@@ -44,7 +44,7 @@ fi
+ # Parsing arguments
+ parse_parameters ${1}
+ 
+-# AWS pre-requisites (per env)
++# GCP pre-requisites (per env)
+ echo "⏱  $(date +%H%Mhrs)"
+ echo ""
+ echo "Creating GCP pre-requisites for $prefix:"
+@@ -55,6 +55,20 @@ done
+ echo ${underline}
+ 
+ 
++# 0. APIs
++requiredApis="compute.googleapis.com runtimeconfig.googleapis.com iam.googleapis.com storage.googleapis.com sqladmin.googleapis.com servicenetworking.googleapis.com"
++servicesList="$(mktemp)"
++gcloud services list > "${servicesList}"
++for api in ${requiredApis} ; do
++  if ! grep -q ${api} "${servicesList}" ; then
++    result=$(gcloud services enable ${api})
++    handle_exception $? $prefix "enabling API $api" "$result"
++    echo "${CHECK_MARK}  $prefix: enabled API $api"
++  fi
++done
++echo "${ALREADY_DONE}  $prefix: Google APIs for $prefix already enabled"
++rm ${servicesList}
++
+ # 1. Buckets
+ if [[ "$($base_dir/gcp-pre-req/gcp_check_if_resource_exists.sh $prefix buckets)" == "no" ]]; then
+     result=$($base_dir/gcp-pre-req/gcp_create_buckets.sh $prefix "$region" 2>&1 >/dev/null)
+@@ -113,9 +127,9 @@ if [[ "$generate_credential" == "yes" ]]; then
+     result=$($base_dir/gcp-pre-req/gcp_create_service_account.sh $prefix 2>/dev/null)
+     handle_exception $? $prefix "credential service account creation" "$result"
+     echo "${CHECK_MARK}  $prefix: credential service account created"
+-    mv ${base_dir}/${prefix}-cdp-cred-sa-gcp-cred.json ${base_dir}/gcp-pre-req/credential_jsons/
++    mv ${base_dir}/${prefix}-cdpcrd-sa-gcp-cred.json ${base_dir}/gcp-pre-req/credential_jsons/
+ 
+-    result=$($base_dir/cdp_create_gcp_credential.sh ${credential} ${base_dir}/gcp-pre-req/credential_jsons/${prefix}-cdp-cred-sa-gcp-cred.json 2>&1 >/dev/null)
++    result=$($base_dir/cdp_create_gcp_credential.sh ${credential} ${base_dir}/gcp-pre-req/credential_jsons/${prefix}-cdpcrd-sa-gcp-cred.json 2>&1 >/dev/null)
+     handle_exception $? $prefix "credential creation" "$result"
+     echo "${CHECK_MARK}  $prefix: new credential created"
+ fi
+diff --git a/gcp-pre-req/gcp_check_if_resource_exists.sh b/gcp-pre-req/gcp_check_if_resource_exists.sh
+index 4735cba..93b713d 100755
+--- a/gcp-pre-req/gcp_check_if_resource_exists.sh
++++ b/gcp-pre-req/gcp_check_if_resource_exists.sh
+@@ -75,9 +75,9 @@ fi
+ if [[ "$resource" == "iam" ]]; then
+ 
+   log_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-log-sa'") | .email')
+-  datalake_admin_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-datalake-admin-sa'") | .email')
+-  ranger_audit_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-ranger-audit-sa'") | .email')
+-  idbroker_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-idbroker-sa'") | .email')
++  datalake_admin_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-dladm-sa'") | .email')
++  ranger_audit_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-rgraud-sa'") | .email')
++  idbroker_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-idb-sa'") | .email')
+ 
+   if [ ${#log_sa} -gt 1 ] && [ ${#datalake_admin_sa} -gt 1 ] && [ ${#ranger_audit_sa} -gt 1 ] && [ ${#idbroker_sa} -gt 1 ]
+   then
+diff --git a/gcp-pre-req/gcp_create_buckets.sh b/gcp-pre-req/gcp_create_buckets.sh
+index bdc3bc2..d0adc02 100755
+--- a/gcp-pre-req/gcp_create_buckets.sh
++++ b/gcp-pre-req/gcp_create_buckets.sh
+@@ -43,5 +43,5 @@ fi
+ prefix=$1
+ region=$2
+ 
+-gsutil mb -c NEARLINE -l ${region} -b on gs://$prefix-cdp-logs
+-gsutil mb -c NEARLINE -l ${region} -b on gs://$prefix-cdp-data
+\ No newline at end of file
++gsutil mb -c STANDARD -l ${region} -b on gs://$prefix-cdp-logs
++gsutil mb -c STANDARD -l ${region} -b on gs://$prefix-cdp-data
+\ No newline at end of file
+diff --git a/gcp-pre-req/gcp_create_iam.sh b/gcp-pre-req/gcp_create_iam.sh
+index 63d6126..6fc8325 100755
+--- a/gcp-pre-req/gcp_create_iam.sh
++++ b/gcp-pre-req/gcp_create_iam.sh
+@@ -42,6 +42,13 @@ fi
+ prefix=$1
+ project=$(gcloud config get-value project)
+ 
++# The role_id must be 3 to 64 characters long and can be a mix of uppercase and lowercase English letters, digits, underscores and periods.
++# It must match match pattern “[a-zA-Z0-9_\.]{3,64}“.
++rolePrefix="${prefix//-/_}"
++
++# Service account name must be between 6 and 30 characters (inclusive), must begin with a lowercase letter, and consist of lowercase alphanumeric characters that can be separated by hyphens.
++saPrefix="${prefix//_/-}"
++
+ # Logs
+ deleted=$(gcloud iam roles list --project ${project} --show-deleted --format json | jq -r '.[] | select(.title=="'${prefix}'-log-role") | .deleted')
+ 
+@@ -51,32 +58,32 @@ then
+     role_id=$(echo $log_role | awk -F  "/" '{print $NF}')
+     gcloud iam roles undelete ${role_id} --project=${project}
+ else
+-    gcloud iam roles create ${prefix}_log_role --project=${project} --title=${prefix}-log-role --description=${prefix}-log-role  --permissions=storage.buckets.get,storage.objects.create --stage=ALPHA
++    gcloud iam roles create ${rolePrefix}_log_role --project=${project} --title=${prefix}-log-role --description=${prefix}-log-role  --permissions=storage.buckets.get,storage.objects.create --stage=ALPHA
+ fi
+ gcloud iam service-accounts create ${prefix}-log-sa --description="${prefix}-log-sa" --display-name="${prefix}-log-sa"
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-log-sa@${project}.iam.gserviceaccount.com" --role="projects/${project}/roles/${prefix}_log_role" --condition='expression=resource.name == "'${prefix}'-cdp-logs",title='${prefix}'-cdp-logs'
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-log-sa@${project}.iam.gserviceaccount.com" --role="projects/${project}/roles/${rolePrefix}_log_role" --condition='expression=resource.name == "'${prefix}'-cdp-logs",title='${prefix}'-cdp-logs'
+ gsutil iam ch serviceAccount:${prefix}-log-sa@${project}.iam.gserviceaccount.com:admin gs://${prefix}-cdp-logs
+ 
+ 
+ 
+ # DL Admin
+ 
+-gcloud iam service-accounts create ${prefix}-datalake-admin-sa --description="${prefix}-datalake-admin-sa" --display-name="${prefix}-datalake-admin-sa"
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-datalake-admin-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.admin" --condition='expression=resource.name == "'${prefix}'-cdp-data",title='${prefix}'-datalake-admin'
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-datalake-admin-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.admin" --condition='expression=resource.name == "//storage.googleapis.com/projects/_/buckets/'${prefix}'-cdp-data",title=full-'${prefix}'-datalake-admin'
+-gsutil iam ch serviceAccount:${prefix}-datalake-admin-sa@${project}.iam.gserviceaccount.com:admin gs://${prefix}-cdp-data
++gcloud iam service-accounts create ${prefix}-dladm-sa --description="${prefix}-datalake-admin-sa" --display-name="${prefix}-dladm-sa"
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-dladm-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.admin" --condition='expression=resource.name == "'${prefix}'-cdp-data",title='${prefix}'-datalake-admin'
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-dladm-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.admin" --condition='expression=resource.name == "//storage.googleapis.com/projects/_/buckets/'${prefix}'-cdp-data",title=full-'${prefix}'-datalake-admin'
++gsutil iam ch serviceAccount:${prefix}-dladm-sa@${project}.iam.gserviceaccount.com:admin gs://${prefix}-cdp-data
+ 
+ 
+ # Ranger
+ 
+-gcloud iam service-accounts create ${prefix}-ranger-audit-sa --description="${prefix}-ranger-audit-sa" --display-name="${prefix}-ranger-audit-sa"
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-ranger-audit-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.objectAdmin" --condition='expression=resource.name == "'${prefix}'-cdp-data",title='${prefix}'-ranger-audit'
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-ranger-audit-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.objectAdmin" --condition='expression=resource.name == "//storage.googleapis.com/projects/_/buckets/'${prefix}'-cdp-data",title=full-'${prefix}'-ranger-audit'
+-gsutil iam ch serviceAccount:${prefix}-ranger-audit-sa@${project}.iam.gserviceaccount.com:admin gs://${prefix}-cdp-data
++gcloud iam service-accounts create ${prefix}-rgraud-sa --description="${prefix}-ranger-audit-sa" --display-name="${prefix}-rgraud-sa"
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-rgraud-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.objectAdmin" --condition='expression=resource.name == "'${prefix}'-cdp-data",title='${prefix}'-ranger-audit'
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-rgraud-sa@${project}.iam.gserviceaccount.com" --role="roles/storage.objectAdmin" --condition='expression=resource.name == "//storage.googleapis.com/projects/_/buckets/'${prefix}'-cdp-data",title=full-'${prefix}'-ranger-audit'
++gsutil iam ch serviceAccount:${prefix}-rgraud-sa@${project}.iam.gserviceaccount.com:admin gs://${prefix}-cdp-data
+ 
+ #IDbroker
+ 
+-gcloud iam service-accounts create ${prefix}-idbroker-sa --description="${prefix}-idbroker-sa" --display-name="${prefix}-idbroker-sa"
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-idbroker-sa@${project}.iam.gserviceaccount.com" --role="roles/iam.workloadIdentityUser" --condition='expression=resource.name.startsWith("'${prefix}'"),title='${prefix}'-idbroker'
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-idbroker-sa@${project}.iam.gserviceaccount.com" --role="roles/iam.serviceAccountUser" --condition=None
+-gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-idbroker-sa@${project}.iam.gserviceaccount.com" --role="roles/iam.serviceAccountTokenCreator" --condition=None
+\ No newline at end of file
++gcloud iam service-accounts create ${prefix}-idb-sa --description="${prefix}-idbroker-sa" --display-name="${prefix}-idb-sa"
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-idb-sa@${project}.iam.gserviceaccount.com" --role="roles/iam.workloadIdentityUser" --condition='expression=resource.name.startsWith("'${prefix}'"),title='${prefix}'-idbroker'
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-idb-sa@${project}.iam.gserviceaccount.com" --role="roles/iam.serviceAccountUser" --condition=None
++gcloud projects add-iam-policy-binding ${project} --member="serviceAccount:${prefix}-idb-sa@${project}.iam.gserviceaccount.com" --role="roles/iam.serviceAccountTokenCreator" --condition=None
+\ No newline at end of file
+diff --git a/gcp-pre-req/gcp_create_service_account.sh b/gcp-pre-req/gcp_create_service_account.sh
+index 86f6ff2..d7d5fe2 100755
+--- a/gcp-pre-req/gcp_create_service_account.sh
++++ b/gcp-pre-req/gcp_create_service_account.sh
+@@ -15,7 +15,7 @@ Description:
+     Deletes Azure resource group
+ 
+ Arguments:
+-    prefix:         prefix for your service account (name <prefix>-cdp-cred-sa)
++    prefix:         prefix for your service account (name <prefix>-cdpcrd-sa)
+     --help or -h:   displays this help"
+ 
+ }
+@@ -45,14 +45,14 @@ fi
+ 
+ prefix=$1
+ 
+-SERVICE_ACCOUNT_NAME=${prefix}-cdp-cred-sa
++SERVICE_ACCOUNT_NAME=${prefix}-cdpcrd-sa
+ PROJECT_ID=$(gcloud config get-value project)
+ 
+ # Listing all resources
+ 
+ gcloud services enable compute.googleapis.com runtimeconfig.googleapis.com  --quiet
+ 
+-gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME --display-name "${prefix}-cdp-cred-sa" --quiet
++gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME --display-name "${prefix}-cdpcrd-sa" --quiet
+ 
+ 
+ gcloud projects add-iam-policy-binding $PROJECT_ID --member serviceAccount:$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com --role roles/compute.instanceAdmin.v1 --quiet --no-user-output-enabled --condition=None
+diff --git a/gcp-pre-req/gcp_delete_iam.sh b/gcp-pre-req/gcp_delete_iam.sh
+index 36530a1..bb5e94a 100755
+--- a/gcp-pre-req/gcp_delete_iam.sh
++++ b/gcp-pre-req/gcp_delete_iam.sh
+@@ -43,9 +43,9 @@ prefix=$1
+ project=$(gcloud config get-value project)
+ 
+ log_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-log-sa'") | .email')
+-datalake_admin_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-datalake-admin-sa'") | .email')
+-ranger_audit_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-ranger-audit-sa'") | .email')
+-idbroker_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-idbroker-sa'") | .email')
++datalake_admin_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-dladm-sa'") | .email')
++ranger_audit_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-rgraud-sa'") | .email')
++idbroker_sa=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-idb-sa'") | .email')
+ log_role=$(gcloud iam roles list --format json --project ${project} | jq -r '.[] | select(.title=="'${prefix}'-log-role") | .name')
+ if [[ ${#log_sa} -gt 0 ]]
+ then
+diff --git a/gcp-pre-req/gcp_delete_network.sh b/gcp-pre-req/gcp_delete_network.sh
+index 6ba55bd..827c35d 100755
+--- a/gcp-pre-req/gcp_delete_network.sh
++++ b/gcp-pre-req/gcp_delete_network.sh
+@@ -9,13 +9,14 @@ set -o nounset
+ display_usage() {
+     echo "
+ Usage:
+-    $(basename "$0") [--help or -h] <prefix> <sg_cidr> <region>
++    $(basename "$0") [--help or -h] <prefix> <region>
+ 
+ Description:
+-    Creates network assets for CDP env demployment
++    Deletes network assets for CDP env demployment
+ 
+ Arguments:
+     prefix:         prefix of your assets
++    region:         region of your assets
+     --help or -h:   displays this help"
+ 
+ }
+@@ -27,19 +28,20 @@ if [[ (${1:-x} == "--help") || ${1:-x} == "-h" ]]; then
+ fi
+ 
+ # Check the numbers of arguments
+-if [ $# -lt 1 ]; then
++if [ $# -lt 2 ]; then
+     echo "Not enough arguments!" >&2
+     display_usage
+     exit 1
+ fi
+ 
+-if [ $# -gt 1 ]; then
++if [ $# -gt 2 ]; then
+     echo "Too many arguments!" >&2
+     display_usage
+     exit 1
+ fi
+ 
+ prefix=$1
++region=$2
+ project=$(gcloud config get-value project)
+ 
+ # Network
+@@ -49,7 +51,6 @@ subnet_name="${network_name}-subnet-1"
+ 
+ 
+ 
+-
+ network_id=$(gcloud compute networks list --format json | jq -r '.[] | select(.name=="'${network_name}'") | .id')
+ if [[ ${#network_id} -gt 0 ]]
+ then
+@@ -58,7 +59,7 @@ then
+     gcloud compute firewall-rules delete ${network_name}-ingress --quiet 2>&1 >/dev/null
+     gcloud compute firewall-rules delete ${network_name}-ingress-personal --quiet 2>&1 >/dev/null
+ 
+-    gcloud compute networks subnets delete ${subnet_name} --quiet 2>&1 >/dev/null
++    gcloud compute networks subnets delete ${subnet_name} --region $region --quiet 2>&1 >/dev/null
+ 
+     gcloud compute addresses delete google-managed-services-${network_name} --global  --quiet 2>&1 >/dev/null
+ 
+diff --git a/gcp-pre-req/gcp_delete_service_account.sh b/gcp-pre-req/gcp_delete_service_account.sh
+index 72e4aea..7bda4f8 100755
+--- a/gcp-pre-req/gcp_delete_service_account.sh
++++ b/gcp-pre-req/gcp_delete_service_account.sh
+@@ -15,7 +15,7 @@ Description:
+     Deletes Azure resource group
+ 
+ Arguments:
+-    prefix:         prefix for your service account (name <prefix>-cdp-cred-sa)
++    prefix:         prefix for your service account (name <prefix>-cdpcrd-sa)
+     --help or -h:   displays this help"
+ 
+ }
+@@ -49,7 +49,7 @@ prefix=$1
+ # Listing all resources
+ 
+ 
+-email=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-cdp-cred-sa'") | .email')
++email=$(gcloud iam service-accounts list --format json | jq -r '.[] | select(.displayName=="'${prefix}-cdpcrd-sa'") | .email')
+ 
+ if [[ ${#email} -gt 0 ]]
+ then
